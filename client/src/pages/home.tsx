@@ -1,96 +1,172 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { StatCard } from "@/components/stat-card";
 import { ProgressRing } from "@/components/progress-ring";
-import { Droplet, Brain, Heart, Target, TrendingUp, Flame } from "lucide-react";
-import natureBg from "@assets/generated_images/Nature_wellness_garden_background_ba7e9c53.png";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Droplet, Brain, Heart, Target, TrendingUp, Flame, Sparkles, BrainCircuit, ArrowRight, Activity, Smile, CheckCircle2 } from "lucide-react";
+import { Link } from "wouter";
+import { motion } from "framer-motion";
+
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Home() {
+  const { user } = useAuth();
+  const userName = user?.user_metadata?.full_name?.split(' ')[0] || "there";
+
   return (
-    <div className="space-y-8">
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-8 max-w-7xl mx-auto pb-12"
+    >
       <div 
-        className="relative h-64 rounded-2xl overflow-hidden"
-        style={{
-          backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(${natureBg})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
-        }}
+        className="relative h-[300px] rounded-3xl overflow-hidden shadow-2xl group"
       >
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
-          <h1 className="text-4xl font-bold mb-2">Welcome back! 🌸</h1>
-          <p className="text-xl text-cyan-200">Let's make today peaceful and productive</p>
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent z-10" />
+        <img 
+          src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" 
+          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-10000"
+          alt="Peaceful nature"
+        />
+        <div className="absolute inset-0 flex flex-col items-start justify-center text-white p-12 z-20">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Badge variant="secondary" className="mb-4 bg-white/20 backdrop-blur-md text-white border-none px-3 py-1">
+              ✨ Welcome back, {userName}
+            </Badge>
+            <h1 className="text-5xl font-black mb-4 tracking-tight">Syncing Your Life, <br/><span className="text-cyan-400">One Day at a Time.</span></h1>
+            <p className="text-lg text-white/80 max-w-lg mb-8">You're doing great! Your consistency score is up 12% today. Let's keep the momentum going.</p>
+            <div className="flex gap-4">
+              <Button asChild className="bg-cyan-500 hover:bg-cyan-600 text-white border-none shadow-lg">
+                <Link href="/ai-insights">
+                  <BrainCircuit className="h-4 w-4 mr-2" /> Get AI Insights
+                </Link>
+              </Button>
+              <Button variant="outline" className="bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20">
+                View Reports
+              </Button>
+            </div>
+          </motion.div>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Water Intake"
-          value="6/8"
-          icon={Droplet}
-          subtitle="glasses today"
-          color="text-blue-500"
-        />
-        <StatCard
-          title="Meditation"
-          value="15m"
-          icon={Brain}
-          subtitle="daily average"
-          color="text-purple-500"
-        />
-        <StatCard
-          title="Wellness Score"
-          value="82%"
-          icon={Heart}
-          trend="+5% from last week"
-          color="text-pink-500"
-        />
-        <StatCard
-          title="Goals Completed"
-          value="12/15"
-          icon={Target}
-          subtitle="this week"
-          color="text-green-500"
-        />
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          { title: "Hydration", value: "1.5L / 2L", icon: Droplet, sub: "75% of goal", color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-950/20" },
+          { title: "Mindfulness", value: "20m", icon: Brain, sub: "Last session: 2h ago", color: "text-purple-500", bg: "bg-purple-50 dark:bg-purple-950/20" },
+          { title: "Wellness Score", value: "88", icon: Heart, sub: "+4 pts since Monday", color: "text-rose-500", bg: "bg-rose-50 dark:bg-rose-950/20" },
+          { title: "Today's Habits", value: "6/10", icon: CheckCircle2, sub: "4 remaining", color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/20" },
+        ].map((stat, i) => (
+          <motion.div
+            key={stat.title}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: i * 0.1 }}
+          >
+            <Card className="border-none shadow-md hover:shadow-xl transition-all cursor-pointer group">
+              <CardContent className="p-6">
+                <div className={`h-12 w-12 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                  <stat.icon className="h-6 w-6" />
+                </div>
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{stat.title}</h3>
+                <div className="text-2xl font-black mt-1">{stat.value}</div>
+                <p className="text-xs text-muted-foreground mt-1">{stat.sub}</p>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+      <div className="grid gap-8 md:grid-cols-7">
+        <Card className="md:col-span-4 border-none shadow-lg bg-white/50 dark:bg-gray-950/50 backdrop-blur-md">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Flame className="h-5 w-5 text-orange-500" />
-              Daily Progress
-            </CardTitle>
+             <div className="flex items-center justify-between">
+                <div>
+                   <CardTitle className="text-2xl font-black">Life Sync Command</CardTitle>
+                   <CardDescription>Your daily overview across all dimensions</CardDescription>
+                </div>
+                <Button variant="ghost" size="sm" className="text-indigo-600 font-bold">Details <ArrowRight className="h-4 w-4 ml-1" /></Button>
+             </div>
           </CardHeader>
-          <CardContent className="flex justify-center py-6">
-            <ProgressRing progress={68} />
+          <CardContent className="grid grid-cols-2 gap-4 pb-8">
+             <div className="p-6 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 flex flex-col items-center justify-center text-center">
+                <ProgressRing progress={68} size={120} strokeWidth={12} />
+                <h4 className="font-bold mt-4">Habit Sync</h4>
+                <p className="text-xs text-muted-foreground">Almost to your target!</p>
+             </div>
+             <div className="grid grid-rows-2 gap-4">
+                <div className="p-5 rounded-2xl bg-orange-50/50 dark:bg-orange-950/20 border border-orange-100 flex items-center gap-4">
+                   <div className="h-10 w-10 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center">
+                      <Activity className="h-5 w-5 text-orange-700 dark:text-orange-300" />
+                   </div>
+                   <div>
+                      <p className="text-xs font-bold text-orange-800">Activity</p>
+                      <p className="text-sm font-black">45m today</p>
+                   </div>
+                </div>
+                <div className="p-5 rounded-2xl bg-yellow-50/50 dark:bg-yellow-950/20 border border-yellow-100 flex items-center gap-4">
+                   <div className="h-10 w-10 rounded-full bg-yellow-200 dark:bg-yellow-900 flex items-center justify-center">
+                      <Smile className="h-5 w-5 text-yellow-700 dark:text-yellow-300" />
+                   </div>
+                   <div>
+                      <p className="text-xs font-bold text-yellow-800">Mood</p>
+                      <p className="text-sm font-black text-yellow-700">Stable & Positive</p>
+                   </div>
+                </div>
+             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="md:col-span-3 border-none shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-green-500" />
-              Recent Activity
+              Pulse Events
             </CardTitle>
+            <CardDescription>Recent updates in your journey</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="h-2 w-2 rounded-full bg-green-500"></div>
-              <span className="text-sm">Completed morning meditation</span>
-              <span className="ml-auto text-xs text-muted-foreground">10m ago</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-              <span className="text-sm">Drank 2 glasses of water</span>
-              <span className="ml-auto text-xs text-muted-foreground">1h ago</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="h-2 w-2 rounded-full bg-purple-500"></div>
-              <span className="text-sm">Completed 3 tasks</span>
-              <span className="ml-auto text-xs text-muted-foreground">2h ago</span>
-            </div>
+          <CardContent className="space-y-6">
+            {[
+              { text: "Reached 7-day streak in 'Morning Stretch'", time: "12m ago", color: "bg-orange-500" },
+              { text: "AI Insights generated for your sleep patterns", time: "1h ago", color: "bg-indigo-500" },
+              { text: "Successfully completed 'Drink 2L Water'", time: "3h ago", color: "bg-blue-500" },
+              { text: "Logged 'Feeling Enthusiastic' mood", time: "5h ago", color: "bg-yellow-500" },
+            ].map((event, i) => (
+              <div key={i} className="flex items-start gap-4 group cursor-pointer">
+                <div className={`h-2 w-2 rounded-full ${event.color} mt-1.5 shrink-0 group-hover:scale-150 transition-transform`} />
+                <div className="flex-1">
+                  <p className="text-sm font-medium group-hover:text-indigo-600 transition-colors">{event.text}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{event.time}</p>
+                </div>
+              </div>
+            ))}
+            <Button variant="outline" className="w-full mt-4 group">
+               View Full Timeline <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+            </Button>
           </CardContent>
         </Card>
       </div>
-    </div>
+
+      <Card className="bg-gradient-to-br from-indigo-800 via-indigo-700 to-indigo-900 border-none shadow-2xl p-8 text-white relative overflow-hidden group">
+         <div className="absolute right-0 bottom-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
+            <Sparkles className="h-48 w-48" />
+         </div>
+         <div className="max-w-xl relative z-10">
+            <h2 className="text-3xl font-black mb-4 flex items-center gap-3">
+               <BrainCircuit className="h-8 w-8 text-cyan-300" />
+               Ready for your Weekly Sync?
+            </h2>
+            <p className="text-indigo-100 text-lg mb-6 leading-relaxed">
+               Our AI has analyzed your activity, mood, and habits over the last 7 days. Unlock personalized wellness recommendations tailored just for you.
+            </p>
+            <Button size="lg" className="bg-cyan-400 hover:bg-cyan-300 text-indigo-950 font-black px-8 py-6 rounded-xl shadow-xl hover:-translate-y-1 transition-all" asChild>
+               <Link href="/ai-insights">Generate Insights Now</Link>
+            </Button>
+         </div>
+      </Card>
+    </motion.div>
   );
 }

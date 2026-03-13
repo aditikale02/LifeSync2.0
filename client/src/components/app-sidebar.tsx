@@ -2,7 +2,7 @@ import {
   Home, ListTodo, Timer, Droplet, Brain, Heart, BookOpen, 
   Book, Smile, UtensilsCrossed, Moon as MoonIcon, Activity, 
   Users, CheckSquare, Sparkles, Wind, Target, BarChart3, 
-  Gamepad2, MessageSquare 
+  Gamepad2, MessageSquare, BrainCircuit, User
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -15,10 +15,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/use-auth";
 
 const dashboardItems = [
-  { title: "Home", url: "/", icon: Home },
+  { title: "Home", url: "/dashboard", icon: Home },
   { title: "To-Do", url: "/todo", icon: ListTodo },
   { title: "Pomodoro", url: "/pomodoro", icon: Timer },
   { title: "Water Tracker", url: "/water", icon: Droplet },
@@ -36,12 +39,18 @@ const dashboardItems = [
   { title: "Mindfulness", url: "/mindfulness", icon: Wind },
   { title: "Goals", url: "/goals", icon: Target },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
+  { title: "AI Insights", url: "/ai-insights", icon: BrainCircuit },
   { title: "Mind Games", url: "/games", icon: Gamepad2 },
   { title: "Feedback", url: "/feedback", icon: MessageSquare },
 ];
 
+
 export function AppSidebar() {
   const [location] = useLocation();
+  const { user } = useAuth();
+
+  const userDisplayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || "User";
+  const userInitials = userDisplayName.split(' ').map((n: string) => n[0]).join('').toUpperCase().substring(0, 2);
 
   return (
     <Sidebar>
@@ -73,6 +82,24 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter className="p-4 border-t border-sidebar-border">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild size="lg" isActive={location === "/profile"}>
+              <Link href="/profile" className="flex items-center gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user?.user_metadata?.avatar_url || ""} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs">{userInitials}</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col items-start text-sm overflow-hidden">
+                  <span className="font-medium truncate w-full">{userDisplayName}</span>
+                  <span className="text-xs text-muted-foreground truncate w-full">{user?.email}</span>
+                </div>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }

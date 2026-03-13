@@ -1,121 +1,239 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Smile, Frown, Meh, Battery, Moon as MoonIcon, Zap, Wind, Clock } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Smile, Frown, Meh, Battery, Moon as MoonIcon, Zap, Wind, Clock, Sparkles, TrendingUp } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import { motion, AnimatePresence } from "framer-motion";
 
 const moods = [
-  { emoji: "😊", label: "Happy", icon: Smile, color: "text-yellow-500" },
-  { emoji: "😔", label: "Sad", icon: Frown, color: "text-blue-500" },
-  { emoji: "😡", label: "Angry", icon: Zap, color: "text-red-500" },
-  { emoji: "😴", label: "Tired", icon: Battery, color: "text-gray-500" },
-  { emoji: "😪", label: "Sleepy", icon: MoonIcon, color: "text-purple-500" },
-  { emoji: "🤩", label: "Excited", icon: Zap, color: "text-orange-500" },
-  { emoji: "😌", label: "Calm", icon: Wind, color: "text-green-500" },
-  { emoji: "😐", label: "Neutral", icon: Meh, color: "text-gray-400" },
+  { emoji: "🤩", label: "Excited", value: 5, color: "text-orange-500", bg: "bg-orange-50 dark:bg-orange-950/20" },
+  { emoji: "😊", label: "Happy", value: 4, color: "text-yellow-500", bg: "bg-yellow-50 dark:bg-yellow-950/20" },
+  { emoji: "😌", label: "Calm", value: 3.5, color: "text-green-500", bg: "bg-green-50 dark:bg-green-950/20" },
+  { emoji: "😐", label: "Neutral", value: 3, color: "text-gray-400", bg: "bg-gray-50 dark:bg-gray-950/20" },
+  { emoji: "😴", label: "Tired", value: 2.5, color: "text-indigo-500", bg: "bg-indigo-50 dark:bg-indigo-950/20" },
+  { emoji: "😔", label: "Sad", value: 2, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-950/20" },
+  { emoji: "😡", label: "Angry", value: 1, color: "text-red-500", bg: "bg-red-50 dark:bg-red-950/20" },
+  { emoji: "😪", label: "Sleepy", value: 1.5, color: "text-purple-500", bg: "bg-purple-50 dark:bg-purple-950/20" },
 ];
 
-const weeklyMoodData = [
-  { day: "Mon", mood: "Calm" },
-  { day: "Tue", mood: "Happy" },
-  { day: "Wed", mood: "Happy" },
-  { day: "Thu", mood: "Tired" },
-  { day: "Fri", mood: "Excited" },
-  { day: "Sat", mood: "Happy" },
-  { day: "Sun", mood: "Calm" },
+const mockWeeklyData = [
+  { day: "Mon", value: 4, label: "Happy" },
+  { day: "Tue", value: 3.5, label: "Calm" },
+  { day: "Wed", value: 5, label: "Excited" },
+  { day: "Thu", value: 2, label: "Sad" },
+  { day: "Fri", value: 4, label: "Happy" },
+  { day: "Sat", value: 4.5, label: "Happy" },
+  { day: "Sun", value: 3.5, label: "Calm" },
 ];
 
 export default function MoodPage() {
+  const { toast } = useToast();
   const [selectedMood, setSelectedMood] = useState("");
   const [note, setNote] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSaveMood = () => {
-    console.log("Saving mood", { mood: selectedMood, note });
+    setIsSaving(true);
+    setTimeout(() => {
+      setIsSaving(false);
+      toast({
+        title: "Mood Logged ✨",
+        description: `You logged your mood as "${selectedMood}". Take care!`,
+      });
+      setSelectedMood("");
+      setNote("");
+    }, 1200);
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto">
+        <Skeleton className="h-12 w-64" />
+        <Skeleton className="h-4 w-full max-w-md" />
+        <Card className="p-8 space-y-4">
+          <div className="grid grid-cols-4 gap-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => <Skeleton key={i} className="h-24 w-full" />)}
+          </div>
+        </Card>
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Mood Dashboard</h1>
-        <p className="text-muted-foreground">Log your emotions and visualize mental health patterns</p>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-6 max-w-5xl mx-auto pb-12"
+    >
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
+            <Smile className="h-8 w-8 text-yellow-500" />
+            Mood Dashboard
+          </h1>
+          <p className="text-muted-foreground">Log your emotions and visualize mental health patterns over time.</p>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>How are you feeling today?</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-4 gap-4">
-            {moods.map((mood) => (
-              <button
-                key={mood.label}
-                onClick={() => setSelectedMood(mood.label)}
-                className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all hover-elevate ${
-                  selectedMood === mood.label
-                    ? "border-primary bg-accent"
-                    : "border-transparent"
-                }`}
-                data-testid={`button-mood-${mood.label.toLowerCase()}`}
-              >
-                <span className="text-4xl">{mood.emoji}</span>
-                <span className="text-sm font-medium">{mood.label}</span>
-              </button>
-            ))}
-          </div>
+      <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
+        <div className="space-y-6">
+          <Card className="border-none shadow-md overflow-hidden bg-card">
+            <CardHeader className="bg-muted/10 border-b">
+              <CardTitle>How are you feeling right now?</CardTitle>
+              <CardDescription>Select the emoji that best represents your state</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {moods.map((mood) => (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    key={mood.label}
+                    onClick={() => setSelectedMood(mood.label)}
+                    className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${
+                      selectedMood === mood.label
+                        ? `border-indigo-500 ${mood.bg} ring-2 ring-indigo-500/20`
+                        : "border-muted bg-background hover:border-indigo-200"
+                    }`}
+                  >
+                    <span className="text-4xl filter drop-shadow-sm">{mood.emoji}</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">{mood.label}</span>
+                  </motion.button>
+                ))}
+              </div>
 
-          {selectedMood && (
-            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-              <Label htmlFor="note">What's on your mind?</Label>
-              <Textarea
-                id="note"
-                placeholder="Explain how you're feeling..."
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                className="min-h-[100px]"
-                data-testid="textarea-mood-note"
-              />
-              <Button onClick={handleSaveMood} className="w-full" data-testid="button-save-mood">
-                <Clock className="h-4 w-4 mr-2" />
-                Log Mood
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              <AnimatePresence>
+                {selectedMood && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-4 pt-8"
+                  >
+                    <div className="space-y-2">
+                      <Label htmlFor="note" className="text-sm font-medium">Add a note (context helps with patterns)</Label>
+                      <Textarea
+                        id="note"
+                        placeholder="What's causing this feeling? (Optional)"
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        className="min-h-[100px] border-indigo-100 focus:border-indigo-500 bg-muted/5"
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleSaveMood} 
+                      disabled={isSaving}
+                      className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg"
+                    >
+                      {isSaving ? "Saving..." : <><Clock className="h-4 w-4 mr-2" /> Log Emotional State</>}
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </CardContent>
+          </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Weekly Mood Pattern</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-around items-end h-48 border-b">
-            {weeklyMoodData.map((data) => {
-              const moodData = moods.find(m => m.label === data.mood);
-              return (
-                <div key={data.day} className="flex flex-col items-center gap-2">
-                  <span className="text-3xl">{moodData?.emoji || "😐"}</span>
-                  <span className="text-xs font-medium">{data.day}</span>
+          <Card className="border-none shadow-md">
+            <CardHeader className="border-b">
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-indigo-500" />
+                Weekly Resonance
+              </CardTitle>
+              <CardDescription>Your emotional fluctuations through the week</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="h-[250px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={mockWeeklyData}>
+                    <defs>
+                      <linearGradient id="moodGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                    <XAxis 
+                       dataKey="day" 
+                       axisLine={false} 
+                       tickLine={false} 
+                       tick={{fill: '#64748b', fontSize: 12}}
+                       dy={10}
+                    />
+                    <YAxis hide domain={[0, 6]} />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                      labelStyle={{ fontWeight: 'bold' }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="value" 
+                      name="Mood Level"
+                      stroke="#6366f1" 
+                      strokeWidth={3}
+                      fillOpacity={1} 
+                      fill="url(#moodGradient)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <Card className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white border-none shadow-xl overflow-hidden relative">
+             <div className="absolute -right-4 -top-4 opacity-10">
+                <Sparkles className="h-24 w-24" />
+             </div>
+             <CardContent className="p-6">
+                <h3 className="font-bold text-lg mb-2">Reflect & Sync</h3>
+                <p className="text-sm opacity-90 leading-relaxed italic">
+                  "Emotions are like waves; we can't stop them from coming, but we can choose which one to surf."
+                </p>
+                <div className="mt-6 flex items-center gap-3 bg-white/10 p-3 rounded-lg backdrop-blur-sm">
+                   <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center font-bold">
+                      7d
+                   </div>
+                   <div className="text-sm">
+                      <p className="font-bold">Consistency Streak</p>
+                      <p className="opacity-70">3 days in a row logged</p>
+                   </div>
                 </div>
-              );
-            })}
-          </div>
-          <div className="mt-6 bg-accent/20 p-4 rounded-lg text-center">
-            <p className="text-sm italic">📊 You've been calmer this week than last 🌸</p>
-          </div>
-        </CardContent>
-      </Card>
+             </CardContent>
+          </Card>
 
-      <Card className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-purple-900">
-        <CardContent className="p-6 text-center">
-          <p className="text-sm italic">
-            {selectedMood === "Sad" ? "🐾 *virtual hug* It's okay to feel this way. You're not alone 💙" : ""}
-            {selectedMood === "Happy" ? "🐾 *happy dance* Your joy is contagious! 🎉" : ""}
-            {!selectedMood ? "🐾 Tell me how you're feeling today..." : ""}
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+          <Card className="border-none shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Insights</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+               <div className="flex gap-3">
+                  <div className="h-8 w-8 rounded bg-green-100 dark:bg-green-950/30 flex items-center justify-center shrink-0">
+                     <TrendingUp className="h-4 w-4 text-green-600" />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Your mood improves significantly on days you track over 30m of activity.</p>
+               </div>
+               <div className="flex gap-3">
+                  <div className="h-8 w-8 rounded bg-orange-100 dark:bg-orange-950/30 flex items-center justify-center shrink-0">
+                     <Battery className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Thursday evening logs show recurrent lower energy. Consider a meditation session then.</p>
+               </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </motion.div>
   );
 }
