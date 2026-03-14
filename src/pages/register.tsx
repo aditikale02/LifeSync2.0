@@ -110,7 +110,7 @@ export default function Register() {
                   type="text"
                   placeholder="Your name"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                   className="bg-white/50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
                   data-testid="input-name"
                   required
@@ -123,7 +123,7 @@ export default function Register() {
                   type="email"
                   placeholder="you@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                   className="bg-white/50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
                   data-testid="input-email"
                   required
@@ -136,7 +136,7 @@ export default function Register() {
                   type="password"
                   placeholder="Create a password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                   className="bg-white/50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
                   data-testid="input-password"
                   required

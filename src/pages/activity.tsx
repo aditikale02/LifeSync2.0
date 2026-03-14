@@ -203,7 +203,7 @@ export default function ActivityPage() {
                         type="number"
                         placeholder="e.g., 45"
                         value={duration}
-                        onChange={(e) => setDuration(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDuration(e.target.value)}
                         className="h-12 border-orange-100 focus:border-orange-300"
                         min="1"
                         max="1440"

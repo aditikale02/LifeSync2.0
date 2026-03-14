@@ -141,7 +141,7 @@ export default function Login() {
                       type="email"
                       placeholder="you@example.com"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                       className="bg-white/50 border-slate-200 h-12 rounded-xl focus:border-indigo-500 focus:ring-indigo-500 font-medium"
                       data-testid="input-email"
                       required
@@ -157,7 +157,7 @@ export default function Login() {
                       type="password"
                       placeholder="••••••••"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                       className="bg-white/50 border-slate-200 h-12 rounded-xl focus:border-indigo-500 focus:ring-indigo-500 font-medium"
                       data-testid="input-password"
                       required
