@@ -1,4 +1,4 @@
-import WaterPage from "../../pages/water";
+import WaterPage from "../pages/water";
 
 export default function WaterPageExample() {
   return (

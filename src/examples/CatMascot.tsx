@@ -1,4 +1,4 @@
-import { CatMascot } from "../cat-mascot";
+import { CatMascot } from "../components/cat-mascot";
 
 export default function CatMascotExample() {
   return (

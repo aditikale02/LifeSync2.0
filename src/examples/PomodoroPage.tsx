@@ -1,4 +1,4 @@
-import PomodoroPage from "../../pages/pomodoro";
+import PomodoroPage from "../pages/pomodoro";
 
 export default function PomodoroPageExample() {
   return (

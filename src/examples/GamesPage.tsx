@@ -1,4 +1,4 @@
-import GamesPage from "../../pages/games";
+import GamesPage from "../pages/games";
 
 export default function GamesPageExample() {
   return (

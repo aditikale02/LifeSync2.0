@@ -1,4 +1,4 @@
-import { StatCard } from "../stat-card";
+import { StatCard } from "../components/stat-card";
 import { Heart } from "lucide-react";
 
 export default function StatCardExample() {

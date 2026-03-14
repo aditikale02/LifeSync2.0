@@ -1,5 +1,5 @@
-import { ThemeProvider } from "../theme-provider";
-import { ThemeToggle } from "../theme-toggle";
+import { ThemeProvider } from "../components/theme-provider";
+import { ThemeToggle } from "../components/theme-toggle";
 
 export default function ThemeToggleExample() {
   return (

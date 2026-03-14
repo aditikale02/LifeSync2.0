@@ -1,4 +1,4 @@
-import { NatureBackground } from "../nature-background";
+import { NatureBackground } from "../components/nature-background";
 
 export default function NatureBackgroundExample() {
   return (

@@ -1,4 +1,4 @@
-import TodoPage from "../../pages/todo";
+import TodoPage from "../pages/todo";
 
 export default function TodoPageExample() {
   return (

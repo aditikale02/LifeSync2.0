@@ -1,4 +1,4 @@
-import { ProgressRing } from "../progress-ring";
+import { ProgressRing } from "../components/progress-ring";
 
 export default function ProgressRingExample() {
   return (

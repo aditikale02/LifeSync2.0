@@ -1,4 +1,4 @@
-import FeedbackPage from "../../pages/feedback";
+import FeedbackPage from "../pages/feedback";
 
 export default function FeedbackPageExample() {
   return (

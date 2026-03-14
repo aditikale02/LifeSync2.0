@@ -1,4 +1,4 @@
-import MeditationPage from "../../pages/meditation";
+import MeditationPage from "../pages/meditation";
 
 export default function MeditationPageExample() {
   return (
