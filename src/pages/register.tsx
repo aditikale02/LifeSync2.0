@@ -15,6 +15,8 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [website, setWebsite] = useState(""); // Honeypot
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { user, loading: authLoading } = useAuth();
@@ -25,8 +27,31 @@ export default function Register() {
     }
   }, [user, authLoading, setLocation]);
 
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldown]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Honeypot check
+    if (website) {
+      console.warn("Honeypot hit");
+      return;
+    }
+
+    if (cooldown > 0) {
+      toast({
+        title: "Please wait",
+        description: `Please wait ${cooldown} seconds before trying again.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -40,7 +65,14 @@ export default function Register() {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        // Handle specific rate limit error
+        if (error.status === 429 || error.message.toLowerCase().includes("rate limit") || error.message.toLowerCase().includes("too many requests")) {
+          setCooldown(60); // Set a 60-second cooldown
+          throw new Error("You've attempted to sign up too many times. Please wait a minute and try again.");
+        }
+        throw error;
+      }
 
       if (data.session) {
         toast({
@@ -53,6 +85,8 @@ export default function Register() {
           title: "Verify your email",
           description: "We've sent a verification link to your email address.",
         });
+        // Set a small cooldown after successful attempt to prevent spamming
+        setCooldown(30);
         setLocation("/login");
       }
     } catch (error: any) {
@@ -142,8 +176,23 @@ export default function Register() {
                   required
                 />
               </div>
-              <Button type="submit" disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:scale-[1.02] active:scale-[0.98]" data-testid="button-register">
-                {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Create Account"}
+              <div className="hidden">
+                <Input
+                  type="text"
+                  name="website"
+                  value={website}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setWebsite(e.target.value)}
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+              </div>
+              <Button 
+                type="submit" 
+                disabled={loading || cooldown > 0} 
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:scale-[1.02] active:scale-[0.98]" 
+                data-testid="button-register"
+              >
+                {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : cooldown > 0 ? `Wait ${cooldown}s` : "Create Account"}
               </Button>
             </form>
           </CardContent>

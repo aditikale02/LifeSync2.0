@@ -14,6 +14,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { user, loading: authLoading } = useAuth();
@@ -24,8 +25,25 @@ export default function Login() {
     }
   }, [user, authLoading, setLocation]);
 
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldown]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (cooldown > 0) {
+      toast({
+        title: "Please wait",
+        description: `Please wait ${cooldown} seconds before trying again.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     
     try {
@@ -34,7 +52,13 @@ export default function Login() {
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.status === 429 || error.message.toLowerCase().includes("rate limit") || error.message.toLowerCase().includes("too many requests")) {
+          setCooldown(30);
+          throw new Error("Too many login attempts. Please wait a moment.");
+        }
+        throw error;
+      }
 
       toast({
         title: "Login Successful",
@@ -163,8 +187,13 @@ export default function Login() {
                       required
                     />
                   </div>
-                  <Button type="submit" disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-lg h-14 rounded-2xl shadow-xl shadow-indigo-200 transition-all hover:scale-[1.02] active:scale-[0.98] mt-2 group" data-testid="button-login">
-                    {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : (
+                  <Button 
+                    type="submit" 
+                    disabled={loading || cooldown > 0} 
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-lg h-14 rounded-2xl shadow-xl shadow-indigo-200 transition-all hover:scale-[1.02] active:scale-[0.98] mt-2 group" 
+                    data-testid="button-login"
+                  >
+                    {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : cooldown > 0 ? `Wait ${cooldown}s` : (
                       <span className="flex items-center gap-2">
                         Sign In <Zap className="h-5 w-5 fill-white" />
                       </span>
