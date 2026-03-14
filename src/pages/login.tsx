@@ -201,16 +201,6 @@ export default function Login() {
                   </Button>
                 </form>
               </CardContent>
-              <CardFooter className="flex flex-col border-t border-slate-100 bg-slate-50/50 p-8">
-                <p className="text-center text-sm text-slate-500 font-bold">
-                  New to LifeSync?{" "}
-                  <Link href="/register">
-                    <a className="text-indigo-600 hover:text-indigo-700 font-black" data-testid="link-register">
-                      Create an Account
-                    </a>
-                  </Link>
-                </p>
-              </CardFooter>
             </Card>
 
             {/* Feature Highlights */}

@@ -44,7 +44,7 @@ export default function LandingPage() {
                 <Link href="/login">Login</Link>
               </Button>
               <Button asChild className="bg-white text-black hover:bg-white/90 font-bold rounded-full px-6 shadow-lg shadow-white/10">
-                <Link href="/register">Get Started</Link>
+                <Link href="/login">Get Started</Link>
               </Button>
             </div>
           </div>
@@ -76,8 +76,8 @@ export default function LandingPage() {
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
                 <Button asChild size="lg" className="h-14 px-10 rounded-full bg-pink-600 hover:bg-pink-700 text-white font-bold text-lg group shadow-xl shadow-pink-500/30">
-                  <Link href="/register">
-                    Start Your Journey <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  <Link href="/login">
+                    Sign In to Get Started <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </Button>
                 <Button asChild variant="outline" size="lg" className="h-14 px-10 rounded-full border-white/30 bg-white/5 backdrop-blur-md hover:bg-white/10 font-bold text-lg text-white">
