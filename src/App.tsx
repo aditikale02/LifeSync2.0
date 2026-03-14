@@ -11,6 +11,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
+import Register from "@/pages/register";
 import WellnessTest from "@/pages/wellness-test";
 import Home from "@/pages/home";
 import TodoPage from "@/pages/todo";
@@ -66,6 +67,8 @@ function Router() {
     <Switch>
       <Route path="/" component={LandingPage} />
       <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
+      <Route path="/signup" component={Register} />
       <ProtectedRoute path="/dashboard" component={Home} />
       <ProtectedRoute path="/wellness-test" component={WellnessTest} />
       <ProtectedRoute path="/todo" component={TodoPage} />
@@ -127,7 +130,7 @@ function AppLayout({ children, catMessage, showCatMessage, style }: any) {
   const { user, loading } = useAuth();
   const [location] = useLocation();
 
-  const isAuthPage = location === "/login" || location === "/";
+  const isAuthPage = ["/", "/login", "/register", "/signup"].includes(location);
 
   if (loading) {
     return (

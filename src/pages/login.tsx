@@ -13,6 +13,7 @@ import { motion } from "framer-motion";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const { toast } = useToast();
@@ -166,7 +167,7 @@ export default function Login() {
                       placeholder="you@example.com"
                       value={email}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                      className="bg-white/50 border-slate-200 h-12 rounded-xl focus:border-indigo-500 focus:ring-indigo-500 font-medium"
+                      className="bg-white/50 border-slate-200 h-12 rounded-xl focus:border-indigo-500 focus:ring-indigo-500 font-medium text-slate-900 placeholder:text-slate-500"
                       data-testid="input-email"
                       required
                     />
@@ -174,15 +175,21 @@ export default function Login() {
                   <div className="space-y-2">
                     <div className="flex justify-between items-center px-1">
                        <Label htmlFor="password" className="text-slate-700 font-bold">Password</Label>
-                       <a href="#" className="text-xs font-bold text-indigo-600 hover:text-indigo-700">Forgot?</a>
+                       <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        className="text-xs font-bold text-indigo-600 hover:text-indigo-700"
+                       >
+                        {showPassword ? "Hide" : "Show"}
+                       </button>
                     </div>
                     <Input
                       id="password"
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       value={password}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                      className="bg-white/50 border-slate-200 h-12 rounded-xl focus:border-indigo-500 focus:ring-indigo-500 font-medium"
+                      className="bg-white/50 border-slate-200 h-12 rounded-xl focus:border-indigo-500 focus:ring-indigo-500 font-medium text-slate-900 placeholder:text-slate-500"
                       data-testid="input-password"
                       required
                     />
@@ -201,6 +208,12 @@ export default function Login() {
                   </Button>
                 </form>
               </CardContent>
+              <CardFooter className="justify-center text-sm text-slate-600 font-medium pb-6">
+                New to LifeSync?{" "}
+                <Link href="/register">
+                  <a className="ml-1 text-indigo-600 hover:text-indigo-700 font-bold">Create an account</a>
+                </Link>
+              </CardFooter>
             </Card>
 
             {/* Feature Highlights */}

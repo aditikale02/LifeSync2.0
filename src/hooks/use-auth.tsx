@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       
       const path = window.location.pathname;
-      const isAuthPage = ['/login', '/register', '/signup', '/'].includes(path);
+      const isAuthPage = ['/', '/login', '/register', '/signup'].includes(path);
 
       if (!session && !isAuthPage) {
         setLocation("/login");
