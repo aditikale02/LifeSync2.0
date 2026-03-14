@@ -1,4 +1,4 @@
-import AnalyticsPage from "../../pages/analytics";
+import AnalyticsPage from "../pages/analytics";
 
 export default function AnalyticsPageExample() {
   return (
