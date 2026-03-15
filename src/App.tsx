@@ -11,7 +11,6 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
-import Register from "@/pages/register";
 import WellnessTest from "@/pages/wellness-test";
 import Home from "@/pages/home";
 import TodoPage from "@/pages/todo";
@@ -21,11 +20,11 @@ import MeditationPage from "@/pages/meditation";
 import GamesPage from "@/pages/games";
 import FeedbackPage from "@/pages/feedback";
 import AnalyticsPage from "@/pages/analytics";
+import DashboardHubPage from "@/pages/dashboard-hub";
 import HealthPage from "@/pages/health";
 import JournalPage from "@/pages/journal";
 import StudyPage from "@/pages/study";
 import MoodPage from "@/pages/mood";
-import NutritionPage from "@/pages/nutrition";
 import SleepPage from "@/pages/sleep";
 import ActivityPage from "@/pages/activity";
 import SocialPage from "@/pages/social";
@@ -67,9 +66,10 @@ function Router() {
     <Switch>
       <Route path="/" component={LandingPage} />
       <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
-      <Route path="/signup" component={Register} />
+      <Route path="/register" component={Login} />
+      <Route path="/signup" component={Login} />
       <ProtectedRoute path="/dashboard" component={Home} />
+      <ProtectedRoute path="/dashboard-hub" component={DashboardHubPage} />
       <ProtectedRoute path="/wellness-test" component={WellnessTest} />
       <ProtectedRoute path="/todo" component={TodoPage} />
       <ProtectedRoute path="/pomodoro" component={PomodoroPage} />
@@ -79,7 +79,6 @@ function Router() {
       <ProtectedRoute path="/journal" component={JournalPage} />
       <ProtectedRoute path="/study" component={StudyPage} />
       <ProtectedRoute path="/mood" component={MoodPage} />
-      <ProtectedRoute path="/nutrition" component={NutritionPage} />
       <ProtectedRoute path="/sleep" component={SleepPage} />
       <ProtectedRoute path="/activity" component={ActivityPage} />
       <ProtectedRoute path="/social" component={SocialPage} />
@@ -146,14 +145,14 @@ function AppLayout({ children, catMessage, showCatMessage, style }: any) {
 
   return (
     <SidebarProvider style={style}>
-      <div className="flex h-screen w-full overflow-hidden">
+      <div className="flex min-h-svh w-full overflow-hidden md:h-svh">
         <AppSidebar />
         <div className="flex flex-col flex-1 overflow-hidden">
-          <header className="flex items-center justify-between p-4 border-b sticky top-0 bg-background z-40">
+          <header className="sticky top-0 z-40 flex items-center justify-between border-b bg-background px-3 py-3 sm:px-4">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
             <ThemeToggle />
           </header>
-          <main className="flex-1 overflow-auto p-6 relative">
+          <main className="relative flex-1 overflow-auto p-3 sm:p-4 md:p-6">
             <NatureBackground />
             {children}
           </main>

@@ -9,16 +9,25 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/hooks/use-auth";
+import { createWellnessRecord, fetchWellnessRecords } from "@/lib/wellness-api";
 
-const weeklyActivity = [
-  { day: "Mon", minutes: 30 },
-  { day: "Tue", minutes: 45 },
-  { day: "Wed", minutes: 0 },
-  { day: "Thu", minutes: 60 },
-  { day: "Fri", minutes: 30 },
-  { day: "Sat", minutes: 90 },
-  { day: "Sun", minutes: 45 },
-];
+type ActivityRecord = { type: string; duration: number; intensity: string; createdAt: string };
+
+function buildWeeklyActivityChart(records: ActivityRecord[]) {
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const now = new Date();
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(now);
+    d.setDate(now.getDate() - (6 - i));
+    const dayName = dayNames[d.getDay()];
+    const dateStr = d.toISOString().slice(0, 10);
+    const minutes = records
+      .filter(r => String(r.createdAt ?? "").slice(0, 10) === dateStr)
+      .reduce((sum, r) => sum + (r.duration ?? 0), 0);
+    return { day: dayName, minutes };
+  });
+}
 
 const activityTypes = [
   { name: "Running", emoji: "🏃", color: "text-red-600", bg: "bg-red-50 dark:bg-red-950/20", border: "border-red-100" },
@@ -38,23 +47,49 @@ interface ActivityLog {
 
 export default function ActivityPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState("");
   const [duration, setDuration] = useState("");
+  const [weeklyActivity, setWeeklyActivity] = useState<{ day: string; minutes: number }[]>([]);
+  const [streakDays, setStreakDays] = useState(0);
+
+  const loadActivityData = (uid: string) => {
+    fetchWellnessRecords<ActivityRecord>("activity_logs", uid)
+      .then(records => {
+        setWeeklyActivity(buildWeeklyActivityChart(records));
+        // Compute streak
+        let s = 0;
+        const now = new Date();
+        for (let i = 0; i < 30; i++) {
+          const d = new Date(now); d.setDate(now.getDate() - i);
+          const dateStr = d.toISOString().slice(0, 10);
+          if (records.some(r => String(r.createdAt ?? "").slice(0, 10) === dateStr)) s++;
+          else break;
+        }
+        setStreakDays(s);
+        // Recent logs
+        const recent = [...records].slice(0, 10).map(r => ({
+          id: String((r as Record<string, unknown>).id ?? Date.now()),
+          type: r.type ?? "Unknown",
+          duration: r.duration ?? 0,
+          intensity: r.intensity ?? "Moderate",
+          loggedAt: new Date(r.createdAt),
+        }));
+        setActivities(recent);
+      })
+      .catch(() => {});
+  };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setActivities([
-        { id: "1", type: "Running", duration: 30, intensity: "Moderate", loggedAt: new Date() },
-      ]);
-      setLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+    if (!user?.id) { setLoading(false); return; }
+    loadActivityData(user.id);
+    setLoading(false);
+  }, [user?.id]);
 
-  const addActivity = () => {
+  const addActivity = async () => {
     if (!selectedActivity || !duration) {
       toast({
         title: "Incomplete details",
@@ -65,7 +100,7 @@ export default function ActivityPage() {
     }
 
     setIsSaving(true);
-    setTimeout(() => {
+    try {
       const newLog: ActivityLog = {
         id: Date.now().toString(),
         type: selectedActivity,
@@ -73,7 +108,18 @@ export default function ActivityPage() {
         intensity: "Moderate",
         loggedAt: new Date()
       };
+
+      if (user?.id) {
+        await createWellnessRecord("activity_logs", {
+          userId: user.id,
+          type: newLog.type,
+          duration: newLog.duration,
+          intensity: newLog.intensity,
+        });
+      }
+
       setActivities([newLog, ...activities]);
+      if (user?.id) loadActivityData(user.id);
       setDuration("");
       setSelectedActivity("");
       setIsSaving(false);
@@ -81,10 +127,18 @@ export default function ActivityPage() {
         title: "Activity Logged! 💪",
         description: `You did ${duration} minutes of ${selectedActivity}. Keep it up!`,
       });
-    }, 1000);
+    } catch {
+      setIsSaving(false);
+      toast({
+        title: "Could not save activity",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const totalMinutes = weeklyActivity.reduce((sum, day) => sum + day.minutes, 0);
+  const hasActivityData = weeklyActivity.some(d => d.minutes > 0);
 
   if (loading) {
     return (
@@ -115,7 +169,7 @@ export default function ActivityPage() {
         </div>
         <div className="flex items-center gap-2 bg-orange-50 dark:bg-orange-950/20 px-4 py-2 rounded-full border border-orange-100 dark:border-orange-900">
            <Zap className="h-4 w-4 text-orange-500" />
-           <span className="text-sm font-bold text-orange-700 dark:text-orange-400">Streak: 5 Days</span>
+           <span className="text-sm font-bold text-orange-700 dark:text-orange-400">Streak: {streakDays} Day{streakDays !== 1 ? "s" : ""}</span>
         </div>
       </div>
 
@@ -169,20 +223,20 @@ export default function ActivityPage() {
               <CardDescription>Select activity and duration to stay synced</CardDescription>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 gap-3 min-[480px]:grid-cols-3 md:grid-cols-5">
                 {activityTypes.map((activity) => (
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     key={activity.name}
                     onClick={() => setSelectedActivity(activity.name)}
-                    className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                    className={`flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all sm:p-4 ${
                       selectedActivity === activity.name
                         ? `border-orange-500 ${activity.bg} ring-2 ring-orange-100`
                         : "border-transparent bg-muted/40 hover:bg-muted"
                     }`}
                   >
-                    <div className="text-3xl mb-1 filter drop-shadow-sm">{activity.emoji}</div>
+                    <div className="mb-1 text-2xl filter drop-shadow-sm sm:text-3xl">{activity.emoji}</div>
                     <div className="text-xs font-bold uppercase tracking-tighter">{activity.name}</div>
                   </motion.button>
                 ))}
@@ -225,31 +279,32 @@ export default function ActivityPage() {
               <CardTitle className="text-lg">Weekly Intensity Trend</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="h-[250px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={weeklyActivity}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                    <XAxis 
-                       dataKey="day" 
-                       axisLine={false} 
-                       tickLine={false} 
-                       tick={{fill: '#64748b', fontSize: 12}}
-                       dy={10}
-                    />
-                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dx={-10} />
-                    <Tooltip 
-                      cursor={{fill: '#f8fafc', radius: 8}}
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                      labelStyle={{ fontWeight: 'bold' }}
-                    />
-                    <Bar dataKey="minutes" name="Activity (min)" radius={[8, 8, 0, 0]}>
-                      {weeklyActivity.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.minutes > 60 ? '#f97316' : '#fdba74'} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              {hasActivityData ? (
+                <div className="h-[250px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={weeklyActivity}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                      <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dx={-10} />
+                      <Tooltip
+                        cursor={{fill: '#f8fafc', radius: 8}}
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                        labelStyle={{ fontWeight: 'bold' }}
+                      />
+                      <Bar dataKey="minutes" name="Activity (min)" radius={[8, 8, 0, 0]}>
+                        {weeklyActivity.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.minutes > 60 ? '#f97316' : '#fdba74'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="h-[250px] flex flex-col items-center justify-center text-muted-foreground gap-3">
+                  <ActivityIcon className="h-12 w-12 opacity-20" />
+                  <p className="text-sm">Log activities to see your weekly trend.</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -295,7 +350,7 @@ export default function ActivityPage() {
                        </div>
                     </div>
                     <Badge variant="outline" className="text-[10px] group-hover:bg-orange-50 group-hover:text-orange-600 transition-colors">
-                       JUST NOW
+                        {Math.max(1, Math.round((Date.now() - activity.loggedAt.getTime()) / (1000 * 60)))}m ago
                     </Badge>
                   </motion.div>
                 ))}

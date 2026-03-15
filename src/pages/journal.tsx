@@ -1,20 +1,39 @@
-import { useState } from "react";
+﻿import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
-import { BookOpen, Save } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { BookOpen, Save, Clock } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { createWellnessRecord, fetchWellnessRecords } from "@/lib/wellness-api";
 
 const moodEmojis = ["😊", "😔", "😡", "😴", "🤔", "😌", "🥳", "😐"];
 
+type JournalRecord = { title: string; body: string; moodEmoji: string; wordCount: number; createdAt: string };
+
 export default function JournalPage() {
+  const { toast } = useToast();
+  const { user } = useAuth();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [title, setTitle] = useState("");
   const [entry, setEntry] = useState("");
   const [selectedMood, setSelectedMood] = useState("");
   const [wordCount, setWordCount] = useState(0);
+  const [pastEntries, setPastEntries] = useState<JournalRecord[]>([]);
+
+  const loadEntries = (uid: string) => {
+    fetchWellnessRecords<JournalRecord>("journal_entries", uid)
+      .then(records => setPastEntries(records))
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    if (user?.id) loadEntries(user.id);
+  }, [user?.id]);
 
   const handleEntryChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
@@ -22,8 +41,36 @@ export default function JournalPage() {
     setWordCount(text.trim().split(/\s+/).filter(Boolean).length);
   };
 
-  const handleSave = () => {
-    console.log("Saving journal entry", { date, title, entry, mood: selectedMood });
+  const handleSave = async () => {
+    if (!title.trim() || !entry.trim()) {
+      toast({
+        title: "Title and entry required",
+        description: "Please add a title and write your entry before saving.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (user?.id) {
+        await createWellnessRecord("journal_entries", {
+          userId: user.id,
+          title: title.trim(),
+          body: entry.trim(),
+          moodEmoji: selectedMood || null,
+          wordCount,
+        });
+        loadEntries(user.id);
+      }
+
+      toast({ title: "Journal saved", description: "Your entry now contributes to emotional trends and AI insights." });
+      setTitle("");
+      setEntry("");
+      setSelectedMood("");
+      setWordCount(0);
+    } catch {
+      toast({ title: "Could not save journal", description: "Please try again.", variant: "destructive" });
+    }
   };
 
   return (
@@ -83,7 +130,6 @@ export default function JournalPage() {
               />
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>{wordCount} words</span>
-                <span>Auto-saved</span>
               </div>
             </div>
 
@@ -100,19 +146,41 @@ export default function JournalPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Calendar</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              className="rounded-md border"
-            />
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Calendar</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Calendar mode="single" selected={date} onSelect={setDate} className="rounded-md border" />
+            </CardContent>
+          </Card>
+
+          {pastEntries.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Clock className="h-4 w-4" /> Recent Entries
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {pastEntries.slice(0, 5).map((e, i) => (
+                  <div key={i} className="border rounded-lg p-3 space-y-1 hover:bg-muted/30 transition-colors">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-semibold text-sm truncate">{e.title}</p>
+                      {e.moodEmoji && <span className="text-lg">{e.moodEmoji}</span>}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground line-clamp-1">{e.body?.slice(0, 60)}{(e.body?.length ?? 0) > 60 ? "…" : ""}</p>
+                      <Badge variant="outline" className="text-[10px] shrink-0 ml-2">{e.wordCount ?? 0}w</Badge>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">{new Date(e.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );

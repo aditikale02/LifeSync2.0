@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 import { EmptyState } from "@/components/empty-state";
+import { useAuth } from "@/hooks/use-auth";
+import { createWellnessRecord, deleteWellnessRecord, fetchWellnessRecords } from "@/lib/wellness-api";
 
 const categories = ["Health", "Family", "Nature", "Work", "Friends", "Self"];
 const emojis = ["🌸", "❤️", "🌟", "🌈", "☀️", "💫", "🌺", "🦋", "🍄", "🏡", "📖", "🚲"];
@@ -22,6 +24,7 @@ interface GratitudeEntry {
 
 export default function GratitudePage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [entries, setEntries] = useState<GratitudeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [newEntry, setNewEntry] = useState("");
@@ -30,24 +33,34 @@ export default function GratitudePage() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setEntries([
-        { id: "1", text: "Morning sunshine through my window", emoji: "☀️", category: "Nature", date: "Today" },
-        { id: "2", text: "A warm hug from my mom", emoji: "🤗", category: "Family", date: "Today" },
-      ]);
-      setLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+    if (!user?.id) { setLoading(false); return; }
+    fetchWellnessRecords<{ text: string; emoji: string; category: string; createdAt: string }>("gratitude_entries", user.id)
+      .then(records => {
+        const today = new Date().toISOString().slice(0, 10);
+        const loaded: GratitudeEntry[] = records.map(r => ({
+          id: String((r as Record<string, unknown>).id ?? Date.now()),
+          text: r.text ?? "",
+          emoji: r.emoji ?? "🌸",
+          category: r.category ?? "Nature",
+          date: String(r.createdAt ?? "").slice(0, 10) === today
+            ? "Today"
+            : new Date(r.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+        }));
+        setEntries(loaded);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [user?.id]);
 
-  const addEntry = () => {
+  const addEntry = async () => {
     if (!newEntry.trim()) {
       toast({ title: "Write something!", description: "What are you grateful for?", variant: "destructive" });
       return;
     }
 
     setIsSaving(true);
-    setTimeout(() => {
+
+    try {
       const entry: GratitudeEntry = {
         id: Date.now().toString(),
         text: newEntry,
@@ -55,18 +68,53 @@ export default function GratitudePage() {
         category: selectedCategory,
         date: "Today"
       };
-      setEntries([entry, ...entries]);
+
+      if (user?.id) {
+        await createWellnessRecord("gratitude_entries", {
+          userId: user.id,
+          text: newEntry.trim(),
+          emoji: selectedEmoji,
+          category: selectedCategory,
+        });
+        // Refresh list from server
+        const today = new Date().toISOString().slice(0, 10);
+        fetchWellnessRecords<{ text: string; emoji: string; category: string; createdAt: string }>("gratitude_entries", user.id)
+          .then(records => {
+            const loaded: GratitudeEntry[] = records.map(r => ({
+              id: String((r as Record<string, unknown>).id ?? Date.now()),
+              text: r.text ?? "",
+              emoji: r.emoji ?? "🌸",
+              category: r.category ?? "Nature",
+              date: String(r.createdAt ?? "").slice(0, 10) === today ? "Today"
+                : new Date(r.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+            }));
+            setEntries(loaded);
+          })
+          .catch(() => setEntries([entry, ...entries]));
+      } else {
+        setEntries([entry, ...entries]);
+      }
       setNewEntry("");
       setIsSaving(false);
       toast({
         title: "Gratitude Logged 💖",
         description: "Focusing on the good attracts more good.",
       });
-    }, 800);
+    } catch {
+      setIsSaving(false);
+      toast({
+        title: "Could not save gratitude entry",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const deleteEntry = (id: string) => {
     setEntries(entries.filter(e => e.id !== id));
+
+    void deleteWellnessRecord("gratitude_entries", id).catch(() => undefined);
+
     toast({ title: "Entry Removed", description: "Your memory is preserved in your heart." });
   };
 

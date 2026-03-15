@@ -1,112 +1,210 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
-import { TrendingUp, Award, Target, Sparkles, Filter, Calendar } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  BarChart,
+  Bar,
+} from "recharts";
+import { Award, Brain, Heart, Loader2, Target, TrendingUp } from "lucide-react";
 
-const weeklyData = [
-  { day: "Mon", score: 75 },
-  { day: "Tue", score: 82 },
-  { day: "Wed", score: 78 },
-  { day: "Thu", score: 85 },
-  { day: "Fri", score: 88 },
-  { day: "Sat", score: 92 },
-  { day: "Sun", score: 86 },
-];
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/hooks/use-auth";
 
-const categoryData = [
-  { name: "Physical", value: 85, color: "#6366f1" },
-  { name: "Mental", value: 78, color: "#a855f7" },
-  { name: "Social", value: 72, color: "#ec4899" },
-  { name: "Nutrition", value: 88, color: "#f59e0b" },
-];
+type WellnessSummary = {
+  scores: {
+    lifeSyncScore: number;
+    mindScore: number;
+    emotionalScore: number;
+    socialScore: number;
+    productivityScore: number;
+    physicalScore: number;
+  };
+  metrics: {
+    activityMinutes: number;
+    habitCompletionPct: number;
+    avgSleep: number;
+    socialPositiveRatio: number;
+  };
+  trends: {
+    lifeSync7d: Array<{ day: string; value?: number }>;
+    socialFrequency7d: Array<{ day: string; count: number }>;
+  };
+  crossPillar: {
+    sleepVsMood: { correlationHint: string };
+    meditationVsProductivity: { signal: string };
+    activityVsEmotional: { signal: string };
+    gratitudeVsMood: { signal: string };
+    socialVsMood: { signal: string };
+  };
+};
 
 export default function AnalyticsPage() {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState<WellnessSummary | null>(null);
+
+  const loadSummary = async (userId: string, cancelledRef: { cancelled: boolean }) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/wellness-summary/${userId}?days=30`);
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.message || "Failed to load analytics.");
+      }
+
+      if (!cancelledRef.cancelled) {
+        setSummary(payload);
+      }
+    } catch {
+      if (!cancelledRef.cancelled) {
+        setSummary(null);
+      }
+    } finally {
+      if (!cancelledRef.cancelled) {
+        setLoading(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+
+    const cancelledRef = { cancelled: false };
+
+    const handleDataUpdated = () => {
+      void loadSummary(user.id, cancelledRef);
+    };
+
+    void loadSummary(user.id, cancelledRef);
+    window.addEventListener("wellness:data-updated", handleDataUpdated as EventListener);
+
+    return () => {
+      cancelledRef.cancelled = true;
+      window.removeEventListener("wellness:data-updated", handleDataUpdated as EventListener);
+    };
+  }, [user?.id]);
+
+  const pillarData = useMemo(() => {
+    if (!summary) return [];
+    return [
+      { name: "Mind", value: summary.scores.mindScore, color: "#6366f1" },
+      { name: "Emotional", value: summary.scores.emotionalScore, color: "#a855f7" },
+      { name: "Social", value: summary.scores.socialScore, color: "#ec4899" },
+      { name: "Productivity", value: summary.scores.productivityScore, color: "#f97316" },
+      { name: "Physical", value: summary.scores.physicalScore, color: "#14b8a6" },
+    ];
+  }, [summary]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[420px] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!summary) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-3xl font-bold">Advanced Analytics</h1>
+        <p className="text-muted-foreground">No analytics data available yet. Start logging activities to unlock insights.</p>
+      </div>
+    );
+  }
+
+  const cards = [
+    {
+      label: "LifeSync Score",
+      value: `${summary.scores.lifeSyncScore}`,
+      trend: `${summary.scores.lifeSyncScore >= 75 ? "Balanced" : "Growing"}`,
+      icon: Target,
+    },
+    {
+      label: "Active Minutes",
+      value: `${summary.metrics.activityMinutes}m`,
+      trend: summary.metrics.activityMinutes >= 150 ? "On Track" : "Build More",
+      icon: TrendingUp,
+    },
+    {
+      label: "Sleep Average",
+      value: `${summary.metrics.avgSleep.toFixed(1)}h`,
+      trend: summary.metrics.avgSleep >= 7 ? "Healthy" : "Low",
+      icon: Brain,
+    },
+    {
+      label: "Social Positivity",
+      value: `${Math.round(summary.metrics.socialPositiveRatio)}%`,
+      trend: summary.metrics.socialPositiveRatio >= 70 ? "Strong" : "Improve",
+      icon: Heart,
+    },
+  ];
+
+  const patternRows = [
+    ["Sleep vs Mood", summary.crossPillar.sleepVsMood.correlationHint],
+    ["Meditation vs Productivity", summary.crossPillar.meditationVsProductivity.signal],
+    ["Activity vs Emotional", summary.crossPillar.activityVsEmotional.signal],
+    ["Gratitude vs Mood", summary.crossPillar.gratitudeVsMood.signal],
+    ["Social vs Mood", summary.crossPillar.socialVsMood.signal],
+  ];
+
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-8 max-w-7xl mx-auto pb-12"
-    >
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight mb-2">Advanced Analytics</h1>
-          <p className="text-muted-foreground italic">Deep data synthesis across your LifeSync ecosystem.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-2">
-             <Filter className="h-4 w-4" /> Filter
-          </Button>
-          <Button variant="outline" size="sm" className="gap-2">
-             <Calendar className="h-4 w-4" /> Last 30 Days
-          </Button>
-        </div>
+    <div className="mx-auto max-w-7xl space-y-8 pb-12">
+      <div>
+        <h1 className="mb-2 text-3xl font-black tracking-tight">Advanced Analytics</h1>
+        <p className="text-muted-foreground">Live wellness metrics and cross-pillar patterns based on your real activity logs.</p>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: "LifeSync Score", val: "84%", trend: "+7%", icon: Target, color: "text-indigo-600", bg: "bg-indigo-50 dark:bg-indigo-950/20" },
-          { label: "Journal Streak", val: "12 Days", trend: "Record", icon: Sparkles, color: "text-yellow-600", bg: "bg-yellow-50 dark:bg-yellow-950/20" },
-          { label: "Active Minutes", val: "340m", trend: "+120m", icon: TrendingUp, color: "text-green-600", bg: "bg-green-50 dark:bg-green-950/20" },
-          { label: "Achievements", val: "23", trend: "+5 new", icon: Award, color: "text-purple-600", bg: "bg-purple-50 dark:bg-purple-950/20" },
-        ].map((item, i) => (
-          <Card key={i} className="border-none shadow-md hover:shadow-lg transition-all group">
+        {cards.map((item) => (
+          <Card key={item.label} className="border-none shadow-md">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                 <div className={`p-3 rounded-xl ${item.bg} ${item.color}`}>
-                    <item.icon className="h-5 w-5" />
-                 </div>
-                 <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none px-2 py-0 text-[10px]">{item.trend}</Badge>
+              <div className="mb-4 flex items-center justify-between">
+                <div className="rounded-xl bg-primary/10 p-3 text-primary">
+                  <item.icon className="h-5 w-5" />
+                </div>
+                <Badge variant="secondary">{item.trend}</Badge>
               </div>
-              <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{item.label}</h3>
-              <div className="text-3xl font-black mt-1 group-hover:scale-105 transition-transform origin-left">{item.val}</div>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{item.label}</h3>
+              <div className="mt-1 text-3xl font-black">{item.value}</div>
             </CardContent>
           </Card>
         ))}
       </div>
 
       <div className="grid gap-8 lg:grid-cols-3">
-        <Card className="lg:col-span-2 border-none shadow-xl bg-white/50 dark:bg-gray-950/50 backdrop-blur-md">
+        <Card className="border-none shadow-xl lg:col-span-2">
           <CardHeader>
-            <CardTitle>Growth Performance Index</CardTitle>
-            <CardDescription>Daily synchronization score across all dimensions</CardDescription>
+            <CardTitle>LifeSync Trend (7 days)</CardTitle>
+            <CardDescription>Composite score progression from your daily logs</CardDescription>
           </CardHeader>
-          <CardContent className="p-6">
-            <div className="h-[350px] w-full">
+          <CardContent>
+            <div className="h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={weeklyData}>
+                <AreaChart data={summary.trends.lifeSync7d}>
                   <defs>
-                    <linearGradient id="scoreColor" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                    <linearGradient id="lifeSyncFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0.05} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
-                  <XAxis 
-                    dataKey="day" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{fill: '#64748b', fontSize: 12}}
-                    dy={10}
-                  />
-                  <YAxis 
-                    domain={[0, 100]} 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{fill: '#64748b', fontSize: 12}}
-                    dx={-10}
-                  />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="score" 
-                    stroke="#6366f1" 
-                    strokeWidth={4} 
-                    fillOpacity={1} 
-                    fill="url(#scoreColor)" 
-                  />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.2} />
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} />
+                  <YAxis domain={[0, 100]} axisLine={false} tickLine={false} />
+                  <Tooltip />
+                  <Area type="monotone" dataKey="value" stroke="#6366f1" strokeWidth={3} fill="url(#lifeSyncFill)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -115,68 +213,75 @@ export default function AnalyticsPage() {
 
         <Card className="border-none shadow-xl">
           <CardHeader>
-            <CardTitle>Category Distribution</CardTitle>
-            <CardDescription>Focus areas this week</CardDescription>
+            <CardTitle>Pillar Distribution</CardTitle>
+            <CardDescription>Normalized 0-100 sub-scores</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col items-center">
-            <div className="h-[300px] w-full">
+          <CardContent className="space-y-4">
+            <div className="h-[220px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={8}
-                    dataKey="value"
-                  >
-                    {categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                  <Pie data={pillarData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={90} paddingAngle={6}>
+                    {pillarData.map((entry) => (
+                      <Cell key={entry.name} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="grid grid-cols-2 gap-4 w-full mt-6">
-               {categoryData.map((item) => (
-                 <div key={item.name} className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
-                    <span className="text-xs font-bold uppercase tracking-tighter">{item.name}</span>
-                    <span className="text-xs text-muted-foreground ml-auto">{item.value}%</span>
-                 </div>
-               ))}
+            <div className="grid grid-cols-1 gap-2">
+              {pillarData.map((item) => (
+                <div key={item.name} className="flex items-center gap-2 text-sm">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                  <span className="font-medium">{item.name}</span>
+                  <span className="ml-auto text-muted-foreground">{item.value}</span>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
       </div>
-      
+
       <div className="grid gap-8 md:grid-cols-2">
-         <Card className="bg-indigo-600 text-white border-none shadow-2xl p-8 relative overflow-hidden group">
-            <div className="absolute right-0 top-0 p-8 opacity-10">
-               <TrendingUp className="h-32 w-32" />
+        <Card className="border-none shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Award className="h-5 w-5 text-primary" />
+              Social Frequency (7 days)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[240px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={summary.trends.socialFrequency7d}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.2} />
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} />
+                  <YAxis axisLine={false} tickLine={false} />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#22c55e" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-            <h3 className="text-2xl font-black mb-4">Pulse Insight</h3>
-            <p className="opacity-90 leading-relaxed mb-6">
-               Your <strong>Mental Sync</strong> score has increased by 15% since you started logging 20m of meditation daily. Consistency is paying off.
-            </p>
-            <Button className="bg-white text-indigo-600 font-bold hover:bg-indigo-50">View Meditation Logs</Button>
-         </Card>
-         
-         <Card className="border-none shadow-lg p-8 bg-muted/20 border-2 border-dashed border-muted flex flex-col items-center justify-center text-center">
-            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-               <Award className="h-8 w-8 text-primary/40" />
-            </div>
-            <h3 className="font-bold text-lg mb-2">New Milestone Approaching</h3>
-            <p className="text-sm text-muted-foreground mb-6">You're 3 days away from a 15-day synchronization streak.</p>
-            <div className="w-full max-w-xs h-2 bg-muted rounded-full overflow-hidden">
-               <div className="h-full bg-primary w-[80%]" />
-            </div>
-         </Card>
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-lg">
+          <CardHeader>
+            <CardTitle>Cross-Pillar Signals</CardTitle>
+            <CardDescription>Automatically computed relationships from your data</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {patternRows.map(([label, signal]) => (
+              <div key={label} className="flex items-center gap-2 rounded-md border p-2 text-sm">
+                <span className="font-medium">{label}</span>
+                <Badge className="ml-auto" variant={signal === "positive" ? "default" : "secondary"}>
+                  {signal}
+                </Badge>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       </div>
-    </motion.div>
+    </div>
   );
 }
-
-import { Badge } from "@/components/ui/badge";

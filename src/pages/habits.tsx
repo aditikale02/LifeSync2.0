@@ -8,6 +8,10 @@ import { Plus, Trash2, Flame, TrendingUp, Sparkles, CheckCircle2 } from "lucide-
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/hooks/use-auth";
+import { createWellnessRecord, deleteWellnessRecordsByField, fetchWellnessRecords } from "@/lib/wellness-api";
+
+type HabitRecord = { habitName: string; emoji: string; streak: number; completedToday: boolean; successRate: number; createdAt: string };
 
 interface Habit {
   id: string;
@@ -20,34 +24,65 @@ interface Habit {
 
 export default function HabitsPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
   const [newHabit, setNewHabit] = useState("");
 
   useEffect(() => {
-    // Simulate initial data fetch
-    const timer = setTimeout(() => {
-      setHabits([
-        { id: "1", name: "Read 10 pages", emoji: "📚", streak: 7, completedToday: true, successRate: 85 },
-        { id: "2", name: "Stretch", emoji: "🧘", streak: 5, completedToday: false, successRate: 78 },
-        { id: "3", name: "Drink water", emoji: "💧", streak: 12, completedToday: true, successRate: 95 },
-      ]);
-      setLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+    if (!user?.id) { setLoading(false); return; }
+    fetchWellnessRecords<HabitRecord>("habits", user.id)
+      .then(records => {
+        // Group by habitName, keep latest record per habit
+        const map = new Map<string, HabitRecord & { id?: string }>();
+        [...records].reverse().forEach(r => {
+          const existing = map.get(r.habitName);
+          if (!existing || new Date(r.createdAt) > new Date(existing.createdAt)) {
+            map.set(r.habitName, r);
+          }
+        });
+        const loaded: Habit[] = Array.from(map.values()).map(r => ({
+          id: String((r as Record<string, unknown>).id ?? r.habitName),
+          name: r.habitName ?? "",
+          emoji: r.emoji ?? "⭐",
+          streak: r.streak ?? 0,
+          completedToday: r.completedToday ?? false,
+          successRate: r.successRate ?? 0,
+        }));
+        setHabits(loaded);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [user?.id]);
 
   const toggleHabit = (id: string) => {
     setHabits(habits.map(habit => {
       if (habit.id === id) {
         const isCompleting = !habit.completedToday;
+        const nextHabit = {
+          ...habit,
+          completedToday: isCompleting,
+          streak: isCompleting ? habit.streak + 1 : Math.max(0, habit.streak - 1),
+        };
+
+        if (user?.id) {
+          void createWellnessRecord("habits", {
+            userId: user.id,
+            habitName: nextHabit.name,
+            emoji: nextHabit.emoji,
+            streak: nextHabit.streak,
+            completedToday: nextHabit.completedToday,
+            successRate: nextHabit.successRate,
+          }).catch(() => undefined);
+        }
+
         if (isCompleting) {
           toast({
             title: "Habit Completed! 🎉",
             description: `Great job on "${habit.name}"! +1 streak day.`,
           });
         }
-        return { ...habit, completedToday: isCompleting, streak: isCompleting ? habit.streak + 1 : habit.streak - 1 };
+        return nextHabit;
       }
       return habit;
     }));
@@ -71,6 +106,17 @@ export default function HabitsPage() {
       completedToday: false,
       successRate: 0
     };
+
+    if (user?.id) {
+      void createWellnessRecord("habits", {
+        userId: user.id,
+        habitName: habit.name,
+        emoji: habit.emoji,
+        streak: habit.streak,
+        completedToday: habit.completedToday,
+        successRate: habit.successRate,
+      }).catch(() => undefined);
+    }
     
     setHabits([...habits, habit]);
     setNewHabit("");
@@ -83,6 +129,11 @@ export default function HabitsPage() {
   const deleteHabit = (id: string) => {
     const habitToDelete = habits.find(h => h.id === id);
     setHabits(habits.filter(h => h.id !== id));
+
+    if (user?.id && habitToDelete?.name) {
+      void deleteWellnessRecordsByField("habits", user.id, "habitName", habitToDelete.name).catch(() => undefined);
+    }
+
     toast({
       title: "Habit Removed",
       description: `"${habitToDelete?.name}" was deleted.`,

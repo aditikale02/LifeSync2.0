@@ -299,13 +299,13 @@ export default function ProfilePage() {
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <h4 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Appearance</h4>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-0.5">
                     <Label>Theme Mode</Label>
                     <p className="text-sm text-muted-foreground">Select how LifeSync looks to you</p>
                   </div>
                   <Select value={profile.theme} onValueChange={v => setProfile({...profile, theme: v})}>
-                    <SelectTrigger className="w-[150px]">
+                    <SelectTrigger className="w-full sm:w-[150px]">
                       <SelectValue placeholder="Select theme" />
                     </SelectTrigger>
                     <SelectContent>
@@ -319,7 +319,7 @@ export default function ProfilePage() {
 
               <div className="space-y-4 pt-4 border-t">
                 <h4 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Notifications</h4>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-0.5">
                     <Label>Daily Sync Reminders</Label>
                     <p className="text-sm text-muted-foreground">Receive alerts for your tracked habits and goals</p>
@@ -329,7 +329,7 @@ export default function ProfilePage() {
                     onCheckedChange={v => setProfile({...profile, notifications: {...profile.notifications, dailyReminders: v}})}
                   />
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-0.5">
                     <Label>Streak Alerts</Label>
                     <p className="text-sm text-muted-foreground">Get notified when you are close to breaking a streak</p>

@@ -3,7 +3,7 @@ import { StatCard } from "@/components/stat-card";
 import { ProgressRing } from "@/components/progress-ring";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Droplet, Brain, Heart, Target, TrendingUp, Flame, Sparkles, BrainCircuit, ArrowRight, Activity, Smile, CheckCircle2 } from "lucide-react";
+import { Droplet, Brain, Heart, Target, TrendingUp, Flame, Sparkles, BrainCircuit, ArrowRight, Activity, Smile, CheckCircle2, LayoutGrid } from "lucide-react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 
@@ -20,7 +20,7 @@ export default function Home() {
       className="space-y-8 max-w-7xl mx-auto pb-12"
     >
       <div 
-        className="relative h-[300px] rounded-3xl overflow-hidden shadow-2xl group"
+        className="group relative min-h-[320px] overflow-hidden rounded-3xl shadow-2xl sm:min-h-[340px]"
       >
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent z-10" />
         <img 
@@ -28,25 +28,27 @@ export default function Home() {
           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-10000"
           alt="Peaceful nature"
         />
-        <div className="absolute inset-0 flex flex-col items-start justify-center text-white p-12 z-20">
+        <div className="absolute inset-0 z-20 flex flex-col items-start justify-center p-6 text-white sm:p-8 lg:p-12">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Badge variant="secondary" className="mb-4 bg-white/20 backdrop-blur-md text-white border-none px-3 py-1">
+            <Badge variant="secondary" className="mb-4 border-none bg-white/20 px-3 py-1 text-white backdrop-blur-md">
               ✨ Welcome back, {userName}
             </Badge>
-            <h1 className="text-5xl font-black mb-4 tracking-tight">Syncing Your Life, <br/><span className="text-cyan-400">One Day at a Time.</span></h1>
-            <p className="text-lg text-white/80 max-w-lg mb-8">You're doing great! Your consistency score is up 12% today. Let's keep the momentum going.</p>
-            <div className="flex gap-4">
-              <Button asChild className="bg-cyan-500 hover:bg-cyan-600 text-white border-none shadow-lg">
+            <h1 className="mb-4 text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">Syncing Your Life, <br/><span className="text-cyan-400">One Day at a Time.</span></h1>
+            <p className="mb-6 max-w-lg text-base text-white/80 sm:mb-8 sm:text-lg">You're doing great! Your consistency score is up 12% today. Let's keep the momentum going.</p>
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:gap-4">
+              <Button asChild className="border-none bg-cyan-500 text-white shadow-lg hover:bg-cyan-600">
                 <Link href="/ai-insights">
                   <BrainCircuit className="h-4 w-4 mr-2" /> Get AI Insights
                 </Link>
               </Button>
-              <Button variant="outline" className="bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20">
-                View Reports
+              <Button asChild variant="outline" className="border-white/20 bg-white/10 text-white backdrop-blur-md hover:bg-white/20">
+                <Link href="/dashboard-hub">
+                  <LayoutGrid className="h-4 w-4 mr-2" /> Explore Dashboards
+                </Link>
               </Button>
             </div>
           </motion.div>
@@ -91,7 +93,7 @@ export default function Home() {
                 <Button variant="ghost" size="sm" className="text-indigo-600 font-bold">Details <ArrowRight className="h-4 w-4 ml-1" /></Button>
              </div>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4 pb-8">
+          <CardContent className="grid gap-4 pb-8 sm:grid-cols-2">
              <div className="p-6 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 flex flex-col items-center justify-center text-center">
                 <ProgressRing progress={68} size={120} strokeWidth={12} />
                 <h4 className="font-bold mt-4">Habit Sync</h4>
@@ -150,19 +152,19 @@ export default function Home() {
         </Card>
       </div>
 
-      <Card className="bg-gradient-to-br from-indigo-800 via-indigo-700 to-indigo-900 border-none shadow-2xl p-8 text-white relative overflow-hidden group">
+      <Card className="group relative overflow-hidden border-none bg-gradient-to-br from-indigo-800 via-indigo-700 to-indigo-900 p-6 text-white shadow-2xl sm:p-8">
          <div className="absolute right-0 bottom-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
             <Sparkles className="h-48 w-48" />
          </div>
          <div className="max-w-xl relative z-10">
-            <h2 className="text-3xl font-black mb-4 flex items-center gap-3">
+            <h2 className="mb-4 flex items-center gap-3 text-2xl font-black sm:text-3xl">
                <BrainCircuit className="h-8 w-8 text-cyan-300" />
                Ready for your Weekly Sync?
             </h2>
-            <p className="text-indigo-100 text-lg mb-6 leading-relaxed">
+            <p className="mb-6 text-base leading-relaxed text-indigo-100 sm:text-lg">
                Our AI has analyzed your activity, mood, and habits over the last 7 days. Unlock personalized wellness recommendations tailored just for you.
             </p>
-            <Button size="lg" className="bg-cyan-400 hover:bg-cyan-300 text-indigo-950 font-black px-8 py-6 rounded-xl shadow-xl hover:-translate-y-1 transition-all" asChild>
+            <Button size="lg" className="rounded-xl bg-cyan-400 px-6 py-5 font-black text-indigo-950 shadow-xl transition-all hover:-translate-y-1 hover:bg-cyan-300 sm:px-8 sm:py-6" asChild>
                <Link href="/ai-insights">Generate Insights Now</Link>
             </Button>
          </div>

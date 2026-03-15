@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { BrainCircuit, Sparkles, TrendingUp, AlertCircle, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/use-auth";
 
 interface AIInsightRecord {
   id?: string;
@@ -21,19 +21,14 @@ export default function AiInsightsPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [insight, setInsight] = useState<AIInsightRecord | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const generateInsights = async () => {
     setIsGenerating(true);
     setInsight(null);
 
     try {
-      // Step 1: Check authentication
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      // MOCK AUTH for testing UI without login page hooked up:
-      // If user is not logged in, we inform them or attempt a mocked login 
-      // depending on implementation. In production this would require proper login.
-      if (!session) {
+      if (!user?.id) {
         toast({
           title: "Authentication required",
           description: "You must be logged in to generate personalized AI insights.",
@@ -43,15 +38,13 @@ export default function AiInsightsPage() {
         return;
       }
 
-      // Step 2: Invoke Supabase Edge Function
-      const { data, error } = await supabase.functions.invoke<AIInsightRecord>('generate-ai-insights');
+      const response = await fetch(`/api/ai-insights/${user.id}`);
+      const data = await response.json();
 
-      if (error) {
-        console.error("Supabase Edge Function Error:", error);
-        throw new Error(error.message || "Failed to generate insights.");
+      if (!response.ok) {
+        throw new Error(data?.message || "Failed to generate insights.");
       }
 
-      // Step 3: Populate UI
       setInsight(data);
       
       toast({

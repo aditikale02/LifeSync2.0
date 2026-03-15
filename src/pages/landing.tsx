@@ -33,55 +33,49 @@ export default function LandingPage() {
 
       <div className="relative z-10 w-full">
         {/* Navigation */}
-        <nav className="fixed top-0 w-full z-50 bg-black/10 backdrop-blur-lg border-b border-white/10">
-          <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-black/10 backdrop-blur-lg">
+          <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-20 sm:px-6">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-8 w-8 text-pink-500" />
-              <span className="text-2xl font-black tracking-tighter">LifeSync</span>
+              <Sparkles className="h-7 w-7 text-pink-500 sm:h-8 sm:w-8" />
+              <span className="text-xl font-black tracking-tighter sm:text-2xl">LifeSync</span>
             </div>
             <div className="flex items-center gap-4">
-              <Button variant="ghost" asChild className="text-white hover:bg-white/10">
+              <Button asChild variant="outline" className="h-10 rounded-full border-white/30 bg-white/5 px-4 text-sm font-bold text-white backdrop-blur-md hover:bg-white/10 sm:h-11 sm:px-6 sm:text-base">
                 <Link href="/login">Login</Link>
-              </Button>
-              <Button asChild className="bg-white text-black hover:bg-white/90 font-bold rounded-full px-6 shadow-lg shadow-white/10">
-                <Link href="/register">Get Started</Link>
               </Button>
             </div>
           </div>
         </nav>
 
         {/* Hero Section */}
-        <section className="relative pt-48 pb-24 px-6 text-center">
+        <section className="relative px-4 pb-20 pt-32 text-center sm:px-6 sm:pb-24 sm:pt-40 lg:pt-48">
           <div className="max-w-4xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 text-cyan-300 text-sm font-medium mb-8 backdrop-blur-md">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs font-medium text-cyan-300 backdrop-blur-md sm:mb-8 sm:px-4 sm:text-sm">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
                 </span>
                 v2.0 AI Wellness Engine now live
               </div>
-              <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-8 leading-tight drop-shadow-xl">
+              <h1 className="mb-6 text-4xl font-black leading-tight tracking-tight drop-shadow-xl sm:text-5xl md:mb-8 md:text-7xl">
                 Sync Your Life, <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400">
                   Grow Every Day.
                 </span>
               </h1>
-              <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto mb-12 font-medium drop-shadow-lg leading-relaxed">
-                Connect your habits, mood, and activity in one beautiful workspace. Gain clarity and achieve your peak wellness with AI insights.
+              <p className="mx-auto mb-10 max-w-2xl text-lg font-bold leading-relaxed text-white drop-shadow-lg sm:text-xl md:mb-12 md:text-2xl">
+                Start your journey to a better you.
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-                <Button asChild size="lg" className="h-14 px-10 rounded-full bg-pink-600 hover:bg-pink-700 text-white font-bold text-lg group shadow-xl shadow-pink-500/30">
+              <div className="flex items-center justify-center">
+                <Button asChild size="lg" className="group h-12 rounded-full bg-pink-600 px-7 text-base font-bold text-white shadow-xl shadow-pink-500/30 hover:bg-pink-700 sm:h-14 sm:px-10 sm:text-lg">
                   <Link href="/login">
-                    Sign In to Get Started <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                    Get Started <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                   </Link>
-                </Button>
-                <Button asChild variant="outline" size="lg" className="h-14 px-10 rounded-full border-white/30 bg-white/5 backdrop-blur-md hover:bg-white/10 font-bold text-lg text-white">
-                  <Link href="/login">Sign In</Link>
                 </Button>
               </div>
             </motion.div>
@@ -89,9 +83,9 @@ export default function LandingPage() {
         </section>
 
         {/* Features Grid */}
-        <section className="py-24 px-6 border-t border-white/10 bg-black/20 backdrop-blur-md">
+        <section className="border-t border-white/10 bg-black/20 px-4 py-16 backdrop-blur-md sm:px-6 sm:py-24">
           <div className="max-w-7xl mx-auto">
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid gap-6 md:grid-cols-3 md:gap-8">
               {[
                 {
                   icon: BrainCircuit,
@@ -118,12 +112,12 @@ export default function LandingPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="p-10 rounded-[2rem] bg-white/5 border border-white/10 hover:bg-white/10 transition-all backdrop-blur-xl"
+                  className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl transition-all hover:bg-white/10 sm:p-10"
                 >
-                  <div className={`h-14 w-14 rounded-2xl bg-white/5 flex items-center justify-center mb-6 ${feature.color}`}>
+                  <div className={`mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 sm:mb-6 sm:h-14 sm:w-14 ${feature.color}`}>
                     <feature.icon className="h-7 w-7" />
                   </div>
-                  <h3 className="text-2xl font-bold mb-4">{feature.title}</h3>
+                  <h3 className="mb-3 text-xl font-bold sm:mb-4 sm:text-2xl">{feature.title}</h3>
                   <p className="text-white/70 leading-relaxed font-medium">{feature.desc}</p>
                 </motion.div>
               ))}
@@ -132,17 +126,17 @@ export default function LandingPage() {
         </section>
 
         {/* Trust Quote */}
-        <section className="py-24 px-6 text-center">
+        <section className="px-4 py-16 text-center sm:px-6 sm:py-24">
           <div className="max-w-3xl mx-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
             >
-              <div className="flex justify-center mb-8 text-pink-500/80">
-                <ShieldCheck className="h-16 w-16" />
+              <div className="mb-6 flex justify-center text-pink-500/80 sm:mb-8">
+                <ShieldCheck className="h-14 w-14 sm:h-16 sm:w-16" />
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold italic mb-10 leading-tight text-white/90">
+              <h2 className="mb-8 text-2xl font-bold italic leading-tight text-white/90 sm:text-3xl md:mb-10 md:text-4xl">
                 "LifeSync transformed my lifestyle through awareness and AI-driven precision."
               </h2>
               <div className="flex items-center justify-center gap-3 text-white/50 font-bold uppercase tracking-widest text-xs">
@@ -153,7 +147,7 @@ export default function LandingPage() {
         </section>
 
         {/* Footer */}
-        <footer className="mt-16 py-8 px-6 border-t border-white/10 text-center text-sm text-white/40 space-y-1 bg-black/20 backdrop-blur-md">
+        <footer className="mt-16 space-y-1 border-t border-white/10 bg-black/20 px-4 py-8 text-center text-xs text-white/40 backdrop-blur-md sm:px-6 sm:text-sm">
           <p>© 2026 LifeSync &bull; Built by <span className="font-medium text-white/60">Aditi Kale</span></p>
           <p>Developed under <span className="text-white/60">UHV (Universal Human Values) Program</span> &bull; Guided by <span className="text-white/60">Prof. Manjusha Devkule</span></p>
         </footer>

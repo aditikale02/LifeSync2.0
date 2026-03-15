@@ -10,6 +10,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 import { EmptyState } from "@/components/empty-state";
+import { useAuth } from "@/hooks/use-auth";
+import { createWellnessRecord, deleteWellnessRecordsByField, fetchWellnessRecords } from "@/lib/wellness-api";
+
+type GoalRecord = { title: string; type: string; targetDate: string; progress: number; completed: boolean; createdAt: string };
 
 interface Goal {
   id: string;
@@ -22,6 +26,7 @@ interface Goal {
 
 export default function GoalsPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [newGoal, setNewGoal] = useState("");
@@ -30,16 +35,27 @@ export default function GoalsPage() {
   const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setGoals([
-        { id: "1", title: "Read 12 books this year", type: "long", targetDate: "2025-12-31", progress: 65, completed: false },
-        { id: "2", title: "Exercise 3 times this week", type: "short", targetDate: "2026-03-20", progress: 100, completed: true },
-        { id: "3", title: "Learn meditation", type: "short", targetDate: "2026-03-25", progress: 40, completed: false },
-      ]);
-      setLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+    if (!user?.id) { setLoading(false); return; }
+    fetchWellnessRecords<GoalRecord>("goals", user.id)
+      .then(records => {
+        // Group by title, keep latest state per goal title
+        const map = new Map<string, GoalRecord & { id?: string }>();
+        [...records].reverse().forEach(r => {
+          if (!map.has(r.title)) map.set(r.title, r);
+        });
+        const loaded: Goal[] = Array.from(map.values()).map(r => ({
+          id: String((r as Record<string, unknown>).id ?? r.title),
+          title: r.title ?? "",
+          type: (r.type as Goal["type"]) ?? "short",
+          targetDate: r.targetDate ?? "",
+          progress: r.progress ?? 0,
+          completed: r.completed ?? false,
+        }));
+        setGoals(loaded);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [user?.id]);
 
   const addGoal = () => {
     if (!newGoal.trim() || !targetDate) {
@@ -48,28 +64,44 @@ export default function GoalsPage() {
     }
 
     setIsAdding(true);
-    setTimeout(() => {
-      const goal: Goal = {
-        id: Date.now().toString(),
-        title: newGoal,
-        type: goalType,
-        targetDate,
-        progress: 0,
-        completed: false
-      };
-      setGoals([goal, ...goals]);
-      setNewGoal("");
-      setTargetDate("");
-      setIsAdding(false);
-      toast({
-        title: "Goal Created 🏔️",
-        description: `Your journey towards "${newGoal}" begins today.`,
-      });
-    }, 1000);
+    const goal: Goal = {
+      id: Date.now().toString(),
+      title: newGoal.trim(),
+      type: goalType,
+      targetDate,
+      progress: 0,
+      completed: false
+    };
+    setGoals([goal, ...goals]);
+
+    if (user?.id) {
+      void createWellnessRecord("goals", {
+        userId: user.id,
+        title: goal.title,
+        type: goal.type,
+        targetDate: goal.targetDate,
+        progress: goal.progress,
+        completed: goal.completed,
+      }).catch(() => undefined);
+    }
+
+    setNewGoal("");
+    setTargetDate("");
+    setIsAdding(false);
+    toast({
+      title: "Goal Created 🏔️",
+      description: `Your journey towards "${goal.title}" begins today.`,
+    });
   };
 
   const deleteGoal = (id: string) => {
+    const toDelete = goals.find(g => g.id === id);
     setGoals(goals.filter(g => g.id !== id));
+
+    if (user?.id && toDelete?.title) {
+      void deleteWellnessRecordsByField("goals", user.id, "title", toDelete.title).catch(() => undefined);
+    }
+
     toast({ title: "Goal Removed", description: "The mountain hasn't changed, only your path." });
   };
 
@@ -78,10 +110,23 @@ export default function GoalsPage() {
       if (g.id === id) {
         const newProgress = Math.min(100, Math.max(0, g.progress + delta));
         const isNowCompleted = newProgress === 100;
+        const nextGoal = { ...g, progress: newProgress, completed: isNowCompleted };
+
+        if (user?.id) {
+          void createWellnessRecord("goals", {
+            userId: user.id,
+            title: nextGoal.title,
+            type: nextGoal.type,
+            targetDate: nextGoal.targetDate,
+            progress: nextGoal.progress,
+            completed: nextGoal.completed,
+          }).catch(() => undefined);
+        }
+
         if (isNowCompleted && !g.completed) {
            toast({ title: "Achievement Unlocked! 🏆", description: `You reached your goal: "${g.title}"` });
         }
-        return { ...g, progress: newProgress, completed: isNowCompleted };
+        return nextGoal;
       }
       return g;
     }));

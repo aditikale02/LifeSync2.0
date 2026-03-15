@@ -1,6 +1,8 @@
+import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import type { Server } from "http";
 
 const app = express();
 
@@ -70,11 +72,27 @@ app.use((req, res, next) => {
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "localhost",
-  }, () => {
-    log(`serving on http://localhost:${port}`);
-  });
+  const defaultPort = parseInt(process.env.PORT || "5000", 10);
+  const host = "localhost";
+
+  const startServer = (port: number, retriesLeft: number) => {
+    const onError = (error: NodeJS.ErrnoException) => {
+      if (error.code === "EADDRINUSE" && app.get("env") === "development" && retriesLeft > 0) {
+        const nextPort = port + 1;
+        log(`port ${port} is in use, retrying on ${nextPort}`);
+        startServer(nextPort, retriesLeft - 1);
+        return;
+      }
+
+      throw error;
+    };
+
+    server.once("error", onError);
+    server.listen({ port, host }, () => {
+      server.off("error", onError);
+      log(`serving on http://${host}:${port}`);
+    });
+  };
+
+  startServer(defaultPort, 20);
 })();

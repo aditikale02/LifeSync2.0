@@ -3,6 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Wind, Play, Pause, Music } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useMeditationSession } from "@/hooks/use-meditation-session";
+import { meditationSounds } from "@/lib/meditation-sounds";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
+import { createWellnessRecord, fetchWellnessRecords } from "@/lib/wellness-api";
 
 const exercises = [
   "Name 3 things you can see around you",
@@ -15,22 +21,87 @@ const exercises = [
 const breathingPhases = ["Inhale", "Hold", "Exhale", "Hold"];
 const phaseDurations = [4, 2, 4, 2]; // seconds
 
+type MindfulnessRecord = { duration: number; createdAt: string };
+
 export default function MindfulnessPage() {
+  const { toast } = useToast();
+  const { user } = useAuth();
   const [isBreathing, setIsBreathing] = useState(false);
   const [currentPhase, setCurrentPhase] = useState(0);
   const [timer, setTimer] = useState(4);
   const [reflection, setReflection] = useState("");
+  const [sessionDuration, setSessionDuration] = useState(5);
   const [todayExercise] = useState(exercises[Math.floor(Math.random() * exercises.length)]);
+  const [weeklySessions, setWeeklySessions] = useState(0);
+  const [weeklyMinutes, setWeeklyMinutes] = useState(0);
+
+  const loadMindfulnessStats = (userId: string) => {
+    fetchWellnessRecords<MindfulnessRecord>("mindfulness_sessions", userId)
+      .then((records) => {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - 7);
+        const recent = records.filter((record) => new Date(record.createdAt) >= cutoff);
+        setWeeklySessions(recent.length);
+        setWeeklyMinutes(recent.reduce((sum, record) => sum + Number(record.duration ?? 0), 0));
+      })
+      .catch(() => {
+        setWeeklySessions(0);
+        setWeeklyMinutes(0);
+      });
+  };
 
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
+    if (!user?.id) return;
+    loadMindfulnessStats(user.id);
+  }, [user?.id]);
+  const {
+    formattedRemainingTime,
+    isSessionActive,
+    selectedSoundId,
+    selectSound,
+    startSession,
+    stopSession,
+  } = useMeditationSession({
+    sounds: meditationSounds,
+    onSessionComplete: () => {
+      if (user?.id) {
+        void createWellnessRecord("mindfulness_sessions", {
+          userId: user.id,
+          duration: sessionDuration,
+          soundId: selectedSoundId,
+          phaseCycles: 0,
+          completed: true,
+          startedAt: new Date().toISOString(),
+        })
+          .then(() => loadMindfulnessStats(user.id))
+          .catch(() => undefined);
+      }
+
+      setIsBreathing(false);
+      setCurrentPhase(0);
+      setTimer(phaseDurations[0]);
+      toast({
+        title: "Meditation session complete",
+        description: "Time is over. Keep that calm with you for the rest of the day.",
+      });
+    },
+  });
+
+  useEffect(() => {
+    let interval: number | null = null;
 
     if (isBreathing) {
-      interval = setInterval(() => {
+      interval = window.setInterval(() => {
         setTimer((prev) => {
           if (prev <= 1) {
-            setCurrentPhase((phase) => (phase + 1) % 4);
-            return phaseDurations[(currentPhase + 1) % 4];
+            let nextPhase = 0;
+
+            setCurrentPhase((phase) => {
+              nextPhase = (phase + 1) % breathingPhases.length;
+              return nextPhase;
+            });
+
+            return phaseDurations[nextPhase];
           }
           return prev - 1;
         });
@@ -47,6 +118,21 @@ export default function MindfulnessPage() {
     if (phase === "Inhale") return "scale-150";
     if (phase === "Exhale") return "scale-75";
     return "scale-100";
+  };
+
+  const handleToggleBreathing = async () => {
+    if (isBreathing) {
+      setIsBreathing(false);
+      setCurrentPhase(0);
+      setTimer(phaseDurations[0]);
+      stopSession();
+      return;
+    }
+
+    setCurrentPhase(0);
+    setTimer(phaseDurations[0]);
+    setIsBreathing(true);
+    await startSession(sessionDuration);
   };
 
   return (
@@ -72,18 +158,32 @@ export default function MindfulnessPage() {
               <div className="relative z-10 text-center">
                 <div className="text-2xl font-bold">{breathingPhases[currentPhase]}</div>
                 <div className="text-4xl font-bold mt-2">{timer}s</div>
+                <div className="mt-3 text-sm font-medium text-muted-foreground">
+                  {isSessionActive ? `${formattedRemainingTime} remaining` : `${sessionDuration} min session`}
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground" data-testid="text-mindfulness-weekly-stats">
+                  {weeklySessions} session{weeklySessions !== 1 ? "s" : ""} • {weeklyMinutes} min this week
+                </div>
               </div>
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-2">
+              {[5, 10, 15, 20].map((minutes) => (
+                <Button
+                  key={minutes}
+                  type="button"
+                  variant={sessionDuration === minutes ? "default" : "outline"}
+                  onClick={() => setSessionDuration(minutes)}
+                  data-testid={`button-mindfulness-duration-${minutes}`}
+                >
+                  {minutes} min
+                </Button>
+              ))}
             </div>
 
             <Button
               size="lg"
-              onClick={() => {
-                setIsBreathing(!isBreathing);
-                if (!isBreathing) {
-                  setCurrentPhase(0);
-                  setTimer(4);
-                }
-              }}
+              onClick={() => void handleToggleBreathing()}
               data-testid="button-toggle-breathing"
             >
               {isBreathing ? (
@@ -131,18 +231,20 @@ export default function MindfulnessPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button variant="outline" className="w-full justify-start" data-testid="button-music-nature">
-              🌊 Ocean Waves
-            </Button>
-            <Button variant="outline" className="w-full justify-start" data-testid="button-music-rain">
-              🌧️ Gentle Rain
-            </Button>
-            <Button variant="outline" className="w-full justify-start" data-testid="button-music-forest">
-              🌲 Forest Sounds
-            </Button>
-            <Button variant="outline" className="w-full justify-start" data-testid="button-music-birds">
-              🐦 Bird Songs
-            </Button>
+            {meditationSounds.map((sound) => (
+              <Button
+                key={sound.id}
+                variant="outline"
+                className={cn(
+                  "w-full justify-start",
+                  selectedSoundId === sound.id && "border-purple-500 bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-200",
+                )}
+                data-testid={`button-music-${sound.id}`}
+                onClick={() => void selectSound(sound.id)}
+              >
+                {sound.emoji} {sound.name}
+              </Button>
+            ))}
           </CardContent>
         </Card>
       </div>
@@ -159,7 +261,34 @@ export default function MindfulnessPage() {
             className="min-h-[120px]"
             data-testid="textarea-reflection"
           />
-          <Button className="w-full" data-testid="button-save-reflection">
+          <Button
+            variant="outline"
+            className="w-full"
+            data-testid="button-save-reflection-log"
+            onClick={() => {
+              if (!user?.id || !reflection.trim()) return;
+              void createWellnessRecord("journal_entries", {
+                userId: user.id,
+                title: "Mindfulness Reflection",
+                body: reflection.trim(),
+                moodEmoji: null,
+                wordCount: reflection.trim().split(/\s+/).filter(Boolean).length,
+              })
+                .then(() => {
+                  toast({
+                    title: "Reflection saved",
+                    description: "Your reflection now contributes to emotional insights.",
+                  });
+                })
+                .catch(() => {
+                  toast({
+                    title: "Could not save reflection",
+                    description: "Please try again.",
+                    variant: "destructive",
+                  });
+                });
+            }}
+          >
             Save Reflection
           </Button>
         </CardContent>

@@ -58,35 +58,33 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
+      const registerResponse = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          email,
+          password,
+          fullName,
+        }),
       });
 
-      if (error) {
+      const registerResult = await registerResponse.json().catch(() => ({}));
+
+      if (!registerResponse.ok) {
+        const message = registerResult?.message || "Registration failed.";
+
         if (
-          error.status === 429 ||
-          error.message.toLowerCase().includes("rate limit") ||
-          error.message.toLowerCase().includes("too many requests")
+          registerResponse.status === 429 ||
+          message.toLowerCase().includes("rate limit") ||
+          message.toLowerCase().includes("too many requests")
         ) {
           setCooldown(30);
           throw new Error("Too many signup attempts. Please wait a moment.");
         }
-        throw error;
-      }
 
-      if (data.session) {
-        toast({
-          title: "Registration Successful",
-          description: "Welcome to LifeSync!",
-        });
-        setLocation("/dashboard");
-        return;
+        throw new Error(message);
       }
 
       const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -95,9 +93,7 @@ export default function Register() {
       });
 
       if (signInError) {
-        throw new Error(
-          "Account created, but email confirmation is still enabled in Supabase. Disable Confirm email in Auth settings for instant signup."
-        );
+        throw signInError;
       }
 
       toast({

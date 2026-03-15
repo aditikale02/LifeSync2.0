@@ -1,7 +1,7 @@
 import { 
   Home, ListTodo, Timer, Droplet, Brain, Heart, BookOpen, 
-  Book, Smile, UtensilsCrossed, Moon as MoonIcon, Activity, 
-  Users, CheckSquare, Sparkles, Wind, Target, BarChart3, 
+  Book, Smile, Moon as MoonIcon, Activity, 
+  Users, CheckSquare, Sparkles, Wind, Target, BarChart3, LayoutGrid,
   Gamepad2, MessageSquare, BrainCircuit, User
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
@@ -22,6 +22,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 const dashboardItems = [
   { title: "Home", url: "/dashboard", icon: Home },
+  { title: "Dashboard Hub", url: "/dashboard-hub", icon: LayoutGrid },
   { title: "To-Do", url: "/todo", icon: ListTodo },
   { title: "Pomodoro", url: "/pomodoro", icon: Timer },
   { title: "Water Tracker", url: "/water", icon: Droplet },
@@ -30,7 +31,6 @@ const dashboardItems = [
   { title: "Journal", url: "/journal", icon: BookOpen },
   { title: "Study", url: "/study", icon: Book },
   { title: "Mood", url: "/mood", icon: Smile },
-  { title: "Nutrition", url: "/nutrition", icon: UtensilsCrossed },
   { title: "Sleep", url: "/sleep", icon: MoonIcon },
   { title: "Activity", url: "/activity", icon: Activity },
   { title: "Social", url: "/social", icon: Users },

@@ -8,6 +8,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 import { EmptyState } from "@/components/empty-state";
+import { useAuth } from "@/hooks/use-auth";
+import { createWellnessRecord, deleteWellnessRecordsByField, fetchWellnessRecords } from "@/lib/wellness-api";
+
+type TodoRecord = { text: string; completed: boolean; priority: string; createdAt: string };
 
 interface Todo {
   id: string;
@@ -18,22 +22,32 @@ interface Todo {
 
 export default function TodoPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [newTodo, setNewTodo] = useState("");
   const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setTodos([
-        { id: "1", text: "Morning meditation", completed: true, priority: 'medium' },
-        { id: "2", text: "Drink 8 glasses of water", completed: false, priority: 'high' },
-        { id: "3", text: "30 minutes of exercise", completed: false, priority: 'high' },
-      ]);
-      setLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, []);
+    if (!user?.id) { setLoading(false); return; }
+    fetchWellnessRecords<TodoRecord>("todos", user.id)
+      .then(records => {
+        // Group by text, keep latest state per todo text
+        const map = new Map<string, TodoRecord & { id?: string }>();
+        [...records].reverse().forEach(r => {
+          if (!map.has(r.text)) map.set(r.text, r);
+        });
+        const loaded: Todo[] = Array.from(map.values()).map(r => ({
+          id: String((r as Record<string, unknown>).id ?? r.text),
+          text: r.text ?? "",
+          completed: r.completed ?? false,
+          priority: (r.priority as Todo["priority"]) ?? "medium",
+        }));
+        setTodos(loaded);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [user?.id]);
 
   const addTodo = () => {
     if (!newTodo.trim()) {
@@ -42,31 +56,57 @@ export default function TodoPage() {
     }
     
     setIsAdding(true);
-    setTimeout(() => {
-      setTodos([{ id: Date.now().toString(), text: newTodo, completed: false, priority: 'medium' }, ...todos]);
-      setNewTodo("");
-      setIsAdding(false);
-      toast({
-        title: "Task Added ✅",
-        description: `"${newTodo}" is now in your sync list.`,
-      });
-    }, 600);
+    const nextTodo = { id: Date.now().toString(), text: newTodo.trim(), completed: false, priority: 'medium' as const };
+    setTodos([nextTodo, ...todos]);
+
+    if (user?.id) {
+      void createWellnessRecord("todos", {
+        userId: user.id,
+        text: nextTodo.text,
+        completed: nextTodo.completed,
+        priority: nextTodo.priority,
+      }).catch(() => undefined);
+    }
+
+    setNewTodo("");
+    setIsAdding(false);
+    toast({
+      title: "Task Added ✅",
+      description: `"${nextTodo.text}" is now in your sync list.`,
+    });
   };
 
   const toggleTodo = (id: string) => {
     setTodos(todos.map(todo => {
       if (todo.id === id) {
+        const nextTodo = { ...todo, completed: !todo.completed };
+
+        if (user?.id) {
+          void createWellnessRecord("todos", {
+            userId: user.id,
+            text: nextTodo.text,
+            completed: nextTodo.completed,
+            priority: nextTodo.priority,
+          }).catch(() => undefined);
+        }
+
         if (!todo.completed) {
           toast({ title: "Task Done! 🌟", description: `Way to go! One more step towards sync.` });
         }
-        return { ...todo, completed: !todo.completed };
+        return nextTodo;
       }
       return todo;
     }));
   };
 
   const deleteTodo = (id: string) => {
+    const toDelete = todos.find(todo => todo.id === id);
     setTodos(todos.filter(todo => todo.id !== id));
+
+    if (user?.id && toDelete?.text) {
+      void deleteWellnessRecordsByField("todos", user.id, "text", toDelete.text).catch(() => undefined);
+    }
+
     toast({ title: "Task Deleted", description: "List updated successfully." });
   };
 
