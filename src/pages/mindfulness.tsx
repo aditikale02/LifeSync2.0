@@ -153,7 +153,8 @@ export default function MindfulnessPage() {
           <div className="flex flex-col items-center gap-6">
             <div className="relative w-64 h-64 flex items-center justify-center">
               <div
-                className={`absolute w-32 h-32 rounded-full bg-primary/30 transition-transform duration-[3000ms] ease-in-out ${getCircleSize()}`}
+                className={`absolute w-32 h-32 rounded-full bg-primary/30 transition-transform ease-in-out ${getCircleSize()}`}
+                style={{ transitionDuration: "3000ms" }}
               />
               <div className="relative z-10 text-center">
                 <div className="text-2xl font-bold">{breathingPhases[currentPhase]}</div>
