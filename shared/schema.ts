@@ -27,6 +27,7 @@ export const wellnessTableNames = [
   "activity_logs",
   "sleep_logs",
   "water_logs",
+  "study_logs",
 ] as const;
 
 export type WellnessTableName = typeof wellnessTableNames[number];
@@ -153,6 +154,17 @@ export const waterLogs = pgTable("water_logs", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const studyLogs = pgTable("study_logs", {
+  id: varchar("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  subject: text("subject").notNull(),
+  durationMinutes: integer("duration_minutes").notNull(),
+  focusRating: integer("focus_rating").notNull().default(3),
+  notes: text("notes"),
+  studyDate: text("study_date").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 const baseUserSchema = z.object({
   userId: z.string().min(1),
 });
@@ -230,6 +242,14 @@ export const insertWaterLogSchema = baseUserSchema.extend({
   goal: z.number().int().min(1).optional(),
 });
 
+export const insertStudyLogSchema = baseUserSchema.extend({
+  subject: z.string().trim().min(1),
+  durationMinutes: z.number().int().min(1).max(720),
+  focusRating: z.number().int().min(1).max(5),
+  notes: z.string().trim().max(500).optional().nullable(),
+  studyDate: z.string().min(1),
+});
+
 export const wellnessTables = {
   meditation_sessions: meditationSessions,
   mindfulness_sessions: mindfulnessSessions,
@@ -242,6 +262,7 @@ export const wellnessTables = {
   activity_logs: activityLogs,
   sleep_logs: sleepLogs,
   water_logs: waterLogs,
+  study_logs: studyLogs,
 } as const;
 
 export const wellnessInsertSchemas = {
@@ -256,6 +277,7 @@ export const wellnessInsertSchemas = {
   activity_logs: insertActivityLogSchema,
   sleep_logs: insertSleepLogSchema,
   water_logs: insertWaterLogSchema,
+  study_logs: insertStudyLogSchema,
 } as const;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -284,3 +306,5 @@ export type InsertSleepLog = z.infer<typeof insertSleepLogSchema>;
 export type SleepLog = typeof sleepLogs.$inferSelect;
 export type InsertWaterLog = z.infer<typeof insertWaterLogSchema>;
 export type WaterLog = typeof waterLogs.$inferSelect;
+export type InsertStudyLog = z.infer<typeof insertStudyLogSchema>;
+export type StudyLog = typeof studyLogs.$inferSelect;
