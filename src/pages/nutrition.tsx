@@ -66,7 +66,9 @@ export default function NutritionPage() {
   const loadData = (uid: string) => {
     fetchWellnessRecords<NutritionRecord>("nutrition_logs", uid)
       .then((data) => setRecords(data))
-      .catch(() => {});
+      .catch(() => {
+        toast({ title: "Could not load nutrition data", description: "Please refresh the page.", variant: "destructive" });
+      });
   };
 
   useEffect(() => {
@@ -247,7 +249,7 @@ export default function NutritionPage() {
                     <div className="flex items-center gap-2 overflow-hidden">
                       <span>{mealEmojis[meal.mealType] ?? "🍽️"}</span>
                       <span className="truncate">{meal.foodName}</span>
-                      {meal.calories != null && (
+                      {meal.calories !== null && (
                         <span className="text-xs text-muted-foreground whitespace-nowrap">{meal.calories} cal</span>
                       )}
                     </div>
