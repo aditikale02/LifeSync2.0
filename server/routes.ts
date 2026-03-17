@@ -39,6 +39,7 @@ async function bootstrapWellnessTables() {
     return;
   }
 
+  try {
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS social_interactions (
       id varchar PRIMARY KEY,
@@ -190,6 +191,9 @@ async function bootstrapWellnessTables() {
       created_at timestamp NOT NULL DEFAULT now()
     )
   `);
+  } catch (error) {
+    console.error("Failed to bootstrap wellness tables:", error instanceof Error ? error.message : error);
+  }
 }
 
 async function getWellnessData(userId: string) {
