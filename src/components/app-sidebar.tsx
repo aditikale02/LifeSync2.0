@@ -2,7 +2,7 @@ import {
   Home, ListTodo, Timer, Droplet, Brain, Heart, BookOpen, 
   Book, Smile, Moon as MoonIcon, Activity, 
   Users, CheckSquare, Sparkles, Wind, Target, BarChart3, LayoutGrid,
-  Gamepad2, MessageSquare, BrainCircuit, User
+  Gamepad2, MessageSquare, BrainCircuit, User, UtensilsCrossed
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -33,6 +33,7 @@ const dashboardItems = [
   { title: "Mood", url: "/mood", icon: Smile },
   { title: "Sleep", url: "/sleep", icon: MoonIcon },
   { title: "Activity", url: "/activity", icon: Activity },
+  { title: "Nutrition", url: "/nutrition", icon: UtensilsCrossed },
   { title: "Social", url: "/social", icon: Users },
   { title: "Habits", url: "/habits", icon: CheckSquare },
   { title: "Gratitude", url: "/gratitude", icon: Sparkles },

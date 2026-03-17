@@ -32,6 +32,7 @@ const wellnessDeletableFieldMap: Record<WellnessTableName, string[]> = {
   sleep_logs: ["id", "userId"],
   water_logs: ["id", "userId"],
   study_logs: ["id", "userId", "subject"],
+  nutrition_logs: ["id", "userId", "mealType", "foodName"],
 };
 
 async function bootstrapWellnessTables() {
@@ -188,6 +189,18 @@ async function bootstrapWellnessTables() {
       focus_rating integer NOT NULL DEFAULT 3,
       notes text,
       study_date text NOT NULL,
+      created_at timestamp NOT NULL DEFAULT now()
+    )
+  `);
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS nutrition_logs (
+      id varchar PRIMARY KEY,
+      user_id varchar NOT NULL,
+      meal_type text NOT NULL,
+      food_name text NOT NULL,
+      calories integer,
+      notes text,
       created_at timestamp NOT NULL DEFAULT now()
     )
   `);

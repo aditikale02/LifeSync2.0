@@ -28,6 +28,7 @@ export const wellnessTableNames = [
   "sleep_logs",
   "water_logs",
   "study_logs",
+  "nutrition_logs",
 ] as const;
 
 export type WellnessTableName = typeof wellnessTableNames[number];
@@ -165,6 +166,16 @@ export const studyLogs = pgTable("study_logs", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const nutritionLogs = pgTable("nutrition_logs", {
+  id: varchar("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  mealType: text("meal_type").notNull(),
+  foodName: text("food_name").notNull(),
+  calories: integer("calories"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 const baseUserSchema = z.object({
   userId: z.string().min(1),
 });
@@ -250,6 +261,13 @@ export const insertStudyLogSchema = baseUserSchema.extend({
   studyDate: z.string().min(1),
 });
 
+export const insertNutritionLogSchema = baseUserSchema.extend({
+  mealType: z.enum(["Breakfast", "Lunch", "Dinner", "Snack"]),
+  foodName: z.string().trim().min(1),
+  calories: z.number().int().min(0).optional().nullable(),
+  notes: z.string().trim().max(500).optional().nullable(),
+});
+
 export const wellnessTables = {
   meditation_sessions: meditationSessions,
   mindfulness_sessions: mindfulnessSessions,
@@ -263,6 +281,7 @@ export const wellnessTables = {
   sleep_logs: sleepLogs,
   water_logs: waterLogs,
   study_logs: studyLogs,
+  nutrition_logs: nutritionLogs,
 } as const;
 
 export const wellnessInsertSchemas = {
@@ -278,6 +297,7 @@ export const wellnessInsertSchemas = {
   sleep_logs: insertSleepLogSchema,
   water_logs: insertWaterLogSchema,
   study_logs: insertStudyLogSchema,
+  nutrition_logs: insertNutritionLogSchema,
 } as const;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -308,3 +328,5 @@ export type InsertWaterLog = z.infer<typeof insertWaterLogSchema>;
 export type WaterLog = typeof waterLogs.$inferSelect;
 export type InsertStudyLog = z.infer<typeof insertStudyLogSchema>;
 export type StudyLog = typeof studyLogs.$inferSelect;
+export type InsertNutritionLog = z.infer<typeof insertNutritionLogSchema>;
+export type NutritionLog = typeof nutritionLogs.$inferSelect;

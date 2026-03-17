@@ -25,6 +25,7 @@ import {
   Timer,
   User,
   Users,
+  UtensilsCrossed,
   Wind,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -61,6 +62,7 @@ const dashboardCatalog: DashboardItem[] = [
   { title: "Mood", description: "Log emotions, identify trends, and reflect on how you feel.", url: "/mood", category: "Wellbeing", icon: Smile, accent: "bg-yellow-50 dark:bg-yellow-950/20", accentText: "text-yellow-600" },
   { title: "Sleep", description: "Review sleep habits and support better recovery patterns.", url: "/sleep", category: "Wellbeing", icon: Moon, accent: "bg-slate-100 dark:bg-slate-800", accentText: "text-slate-600 dark:text-slate-300" },
   { title: "Activity", description: "Follow physical movement and stay consistent with active living.", url: "/activity", category: "Wellbeing", icon: Activity, accent: "bg-orange-50 dark:bg-orange-950/20", accentText: "text-orange-600" },
+  { title: "Nutrition", description: "Log meals and snacks to maintain a balanced diet.", url: "/nutrition", category: "Wellbeing", icon: UtensilsCrossed, accent: "bg-lime-50 dark:bg-lime-950/20", accentText: "text-lime-600" },
   { title: "Social", description: "Reflect on connection, relationships, and your support network.", url: "/social", category: "Wellbeing", icon: Users, accent: "bg-cyan-50 dark:bg-cyan-950/20", accentText: "text-cyan-600" },
   { title: "Gratitude", description: "Capture moments of appreciation and strengthen positive reflection.", url: "/gratitude", category: "Wellbeing", icon: Sparkles, accent: "bg-pink-50 dark:bg-pink-950/20", accentText: "text-pink-600" },
   { title: "Mindfulness", description: "Ground yourself with calm practices and mental reset tools.", url: "/mindfulness", category: "Wellbeing", icon: Wind, accent: "bg-teal-50 dark:bg-teal-950/20", accentText: "text-teal-600" },
