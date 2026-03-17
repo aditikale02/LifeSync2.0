@@ -35,6 +35,7 @@ import GoalsPage from "@/pages/goals";
 import AiInsightsPage from "@/pages/ai-insights";
 import ProfilePage from "@/pages/profile";
 import LandingPage from "@/pages/landing";
+import NutritionPage from "@/pages/nutrition";
 import { useState } from "react";
 import { AuthProvider } from "@/hooks/use-auth";
 
@@ -81,6 +82,7 @@ function Router() {
       <ProtectedRoute path="/mood" component={MoodPage} />
       <ProtectedRoute path="/sleep" component={SleepPage} />
       <ProtectedRoute path="/activity" component={ActivityPage} />
+      <ProtectedRoute path="/nutrition" component={NutritionPage} />
       <ProtectedRoute path="/social" component={SocialPage} />
       <ProtectedRoute path="/habits" component={HabitsPage} />
       <ProtectedRoute path="/gratitude" component={GratitudePage} />
