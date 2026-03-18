@@ -1,0 +1,14 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:5100",
+      "localStorage": [
+        {
+          "name": "sb-iiaqcaugjffqhjlecwtz-auth-token",
+          "value": "{\"access_token\":\"eyJhbGciOiJFUzI1NiIsImtpZCI6IjdmMjVjY2ViLTA5OTAtNDRjYS1hYTE2LWZkZTBlNzc3Y2JkOCIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2lpYXFjYXVnamZmcWhqbGVjd3R6LnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiIwMTkyMzRlYy1mMWM5LTQ5Y2UtYmMzMC02OWM5YWM5YjQ3MWEiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzczODUxMjE2LCJpYXQiOjE3NzM4NDc2MTYsImVtYWlsIjoibGlmZXN5bmMuZTJlLjE3NzM4NDc2MDc0MjctNTcyOEBleGFtcGxlLmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZW1haWwiLCJwcm92aWRlcnMiOlsiZW1haWwiXX0sInVzZXJfbWV0YWRhdGEiOnsiZW1haWxfdmVyaWZpZWQiOnRydWUsImZ1bGxfbmFtZSI6IkUyRSBVc2VyIDE3NzM4NDc2MDc0MjctNTcyOCJ9LCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDEiLCJhbXIiOlt7Im1ldGhvZCI6InBhc3N3b3JkIiwidGltZXN0YW1wIjoxNzczODQ3NjE2fV0sInNlc3Npb25faWQiOiJmNThlOTJkMi04YmNjLTQxMzctOGFmZC0xODBiMmJjMmQyMTEiLCJpc19hbm9ueW1vdXMiOmZhbHNlfQ.6eglLcHwBHrHrGocudIfkoZZy_i7_rZsWGRJE_GRNWtaH5V3Ryp9HHMMYfxn5Uxg2aWqEnTIxaCBdjLu_qkD4Q\",\"token_type\":\"bearer\",\"expires_in\":3600,\"expires_at\":1773851216,\"refresh_token\":\"ps2th65uydkb\",\"user\":{\"id\":\"019234ec-f1c9-49ce-bc30-69c9ac9b471a\",\"aud\":\"authenticated\",\"role\":\"authenticated\",\"email\":\"lifesync.e2e.1773847607427-5728@example.com\",\"email_confirmed_at\":\"2026-03-18T15:26:55.137981Z\",\"phone\":\"\",\"confirmed_at\":\"2026-03-18T15:26:55.137981Z\",\"last_sign_in_at\":\"2026-03-18T15:26:56.204621662Z\",\"app_metadata\":{\"provider\":\"email\",\"providers\":[\"email\"]},\"user_metadata\":{\"email_verified\":true,\"full_name\":\"E2E User 1773847607427-5728\"},\"identities\":[{\"identity_id\":\"b7053b62-b890-403b-a9d9-e8a62031627b\",\"id\":\"019234ec-f1c9-49ce-bc30-69c9ac9b471a\",\"user_id\":\"019234ec-f1c9-49ce-bc30-69c9ac9b471a\",\"identity_data\":{\"email\":\"lifesync.e2e.1773847607427-5728@example.com\",\"email_verified\":false,\"phone_verified\":false,\"sub\":\"019234ec-f1c9-49ce-bc30-69c9ac9b471a\"},\"provider\":\"email\",\"last_sign_in_at\":\"2026-03-18T15:26:55.134078Z\",\"created_at\":\"2026-03-18T15:26:55.134138Z\",\"updated_at\":\"2026-03-18T15:26:55.134138Z\",\"email\":\"lifesync.e2e.1773847607427-5728@example.com\"}],\"created_at\":\"2026-03-18T15:26:55.105304Z\",\"updated_at\":\"2026-03-18T15:26:56.212856Z\",\"is_anonymous\":false},\"weak_password\":null}"
+        }
+      ]
+    }
+  ]
+}

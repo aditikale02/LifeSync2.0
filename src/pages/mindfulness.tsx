@@ -22,6 +22,7 @@ const breathingPhases = ["Inhale", "Hold", "Exhale", "Hold"];
 const phaseDurations = [4, 2, 4, 2]; // seconds
 
 type MindfulnessRecord = { duration: number; createdAt: string };
+type ReflectionRecord = { id: string; title?: string; body?: string; createdAt?: string };
 
 export default function MindfulnessPage() {
   const { toast } = useToast();
@@ -34,6 +35,7 @@ export default function MindfulnessPage() {
   const [todayExercise] = useState(exercises[Math.floor(Math.random() * exercises.length)]);
   const [weeklySessions, setWeeklySessions] = useState(0);
   const [weeklyMinutes, setWeeklyMinutes] = useState(0);
+  const [recentReflections, setRecentReflections] = useState<ReflectionRecord[]>([]);
 
   const loadMindfulnessStats = (userId: string) => {
     fetchWellnessRecords<MindfulnessRecord>("mindfulness_sessions", userId)
@@ -53,6 +55,11 @@ export default function MindfulnessPage() {
   useEffect(() => {
     if (!user?.id) return;
     loadMindfulnessStats(user.id);
+    fetchWellnessRecords<ReflectionRecord>("journal_entries", user.id)
+      .then((records) => {
+        setRecentReflections(records.filter((record) => record.title === "Mindfulness Reflection").slice(0, 3));
+      })
+      .catch(() => setRecentReflections([]));
   }, [user?.id]);
   const {
     formattedRemainingTime,
@@ -74,7 +81,11 @@ export default function MindfulnessPage() {
           startedAt: new Date().toISOString(),
         })
           .then(() => loadMindfulnessStats(user.id))
-          .catch(() => undefined);
+          .catch((error: unknown) => {
+            const message = error instanceof Error ? error.message : "Please try again.";
+            console.error("[LifeSync] Could not save mindfulness session:", error);
+            toast({ title: "Could not save mindfulness session", description: message, variant: "destructive" });
+          });
       }
 
       setIsBreathing(false);
@@ -270,11 +281,21 @@ export default function MindfulnessPage() {
               void createWellnessRecord("journal_entries", {
                 userId: user.id,
                 title: "Mindfulness Reflection",
-                body: reflection.trim(),
+                content: reflection.trim(),
                 moodEmoji: null,
                 wordCount: reflection.trim().split(/\s+/).filter(Boolean).length,
               })
                 .then(() => {
+                  setRecentReflections((current) => [
+                    {
+                      id: `${Date.now()}`,
+                      title: "Mindfulness Reflection",
+                      body: reflection.trim(),
+                      createdAt: new Date().toISOString(),
+                    },
+                    ...current,
+                  ].slice(0, 3));
+                  setReflection("");
                   toast({
                     title: "Reflection saved",
                     description: "Your reflection now contributes to emotional insights.",
@@ -291,6 +312,18 @@ export default function MindfulnessPage() {
           >
             Save Reflection
           </Button>
+
+          {recentReflections.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground">Recent Reflections</p>
+              {recentReflections.map((item) => (
+                <div key={item.id} className="rounded-md border p-2 text-xs text-muted-foreground">
+                  <p className="line-clamp-2">{item.body}</p>
+                  <p className="mt-1 text-[10px]">{item.createdAt ? new Date(item.createdAt).toLocaleString() : ""}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

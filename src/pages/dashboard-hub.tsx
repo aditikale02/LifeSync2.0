@@ -147,30 +147,28 @@ function DashboardCarouselSection({ category, items }: { category: DashboardCate
                 transition={{ delay: index * 0.04 }}
               >
                 <Link href={item.url}>
-                  <a
-                    className="group block"
+                  <Card
+                    className="group block overflow-hidden border border-white/60 bg-white/80 shadow-[0_3px_14px_rgba(15,23,42,0.07)] backdrop-blur-md transition-all duration-300 hover:shadow-[0_8px_28px_rgba(15,23,42,0.14)] dark:border-white/10 dark:bg-slate-950/75"
                     data-testid={`link-hub-${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
                   >
-                    <Card className="overflow-hidden border border-white/60 bg-white/80 shadow-[0_3px_14px_rgba(15,23,42,0.07)] backdrop-blur-md transition-all duration-300 hover:shadow-[0_8px_28px_rgba(15,23,42,0.14)] dark:border-white/10 dark:bg-slate-950/75">
-                      <div className="rounded-[inherit] transition-transform duration-300 ease-out group-hover:[transform:perspective(800px)_rotateX(2deg)_rotateY(-3deg)_translateY(-4px)] [transform-style:preserve-3d]">
-                        <CardHeader className="p-4 space-y-3">
-                          <div className={cn(
-                            "flex h-10 w-10 items-center justify-center rounded-xl shadow-sm ring-1 ring-black/5",
-                            item.accent,
-                            item.accentText,
-                          )}>
-                            <item.icon className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <CardTitle className="text-sm font-bold tracking-tight leading-snug">{item.title}</CardTitle>
-                            <CardDescription className="mt-1 text-xs leading-relaxed line-clamp-1">
-                              {item.description}
-                            </CardDescription>
-                          </div>
-                        </CardHeader>
-                      </div>
-                    </Card>
-                  </a>
+                    <div className="rounded-[inherit] transition-transform duration-300 ease-out group-hover:[transform:perspective(800px)_rotateX(2deg)_rotateY(-3deg)_translateY(-4px)] [transform-style:preserve-3d]">
+                      <CardHeader className="p-4 space-y-3">
+                        <div className={cn(
+                          "flex h-10 w-10 items-center justify-center rounded-xl shadow-sm ring-1 ring-black/5",
+                          item.accent,
+                          item.accentText,
+                        )}>
+                          <item.icon className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-sm font-bold tracking-tight leading-snug">{item.title}</CardTitle>
+                          <CardDescription className="mt-1 text-xs leading-relaxed line-clamp-1">
+                            {item.description}
+                          </CardDescription>
+                        </div>
+                      </CardHeader>
+                    </div>
+                  </Card>
                 </Link>
               </motion.div>
             </CarouselItem>

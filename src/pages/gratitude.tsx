@@ -48,9 +48,16 @@ export default function GratitudePage() {
         }));
         setEntries(loaded);
       })
-      .catch(() => {})
+      .catch((error: unknown) => {
+        console.error("[LifeSync] Failed to load gratitude entries:", error);
+        toast({
+          title: "Could not load gratitude entries",
+          description: "Please refresh or sign in again.",
+          variant: "destructive",
+        });
+      })
       .finally(() => setLoading(false));
-  }, [user?.id]);
+  }, [user?.id, toast]);
 
   const addEntry = async () => {
     if (!newEntry.trim()) {
@@ -59,6 +66,7 @@ export default function GratitudePage() {
     }
 
     setIsSaving(true);
+    const previousEntries = entries;
 
     try {
       const entry: GratitudeEntry = {
@@ -68,6 +76,8 @@ export default function GratitudePage() {
         category: selectedCategory,
         date: "Today"
       };
+
+      setEntries([entry, ...previousEntries]);
 
       if (user?.id) {
         await createWellnessRecord("gratitude_entries", {
@@ -90,9 +100,9 @@ export default function GratitudePage() {
             }));
             setEntries(loaded);
           })
-          .catch(() => setEntries([entry, ...entries]));
-      } else {
-        setEntries([entry, ...entries]);
+          .catch((error: unknown) => {
+            console.error("[LifeSync] Failed to refresh gratitude entries:", error);
+          });
       }
       setNewEntry("");
       setIsSaving(false);
@@ -100,22 +110,30 @@ export default function GratitudePage() {
         title: "Gratitude Logged 💖",
         description: "Focusing on the good attracts more good.",
       });
-    } catch {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Please try again.";
+      setEntries(previousEntries);
       setIsSaving(false);
       toast({
         title: "Could not save gratitude entry",
-        description: "Please try again.",
+        description: message,
         variant: "destructive",
       });
     }
   };
 
-  const deleteEntry = (id: string) => {
+  const deleteEntry = async (id: string) => {
+    const previousEntries = entries;
     setEntries(entries.filter(e => e.id !== id));
 
-    void deleteWellnessRecord("gratitude_entries", id).catch(() => undefined);
-
-    toast({ title: "Entry Removed", description: "Your memory is preserved in your heart." });
+    try {
+      await deleteWellnessRecord("gratitude_entries", id);
+      toast({ title: "Entry Removed", description: "Your memory is preserved in your heart." });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Please try again.";
+      setEntries(previousEntries);
+      toast({ title: "Could not remove entry", description: message, variant: "destructive" });
+    }
   };
 
   const todayEntries = entries.filter(e => e.date === "Today");

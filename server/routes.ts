@@ -39,6 +39,7 @@ async function bootstrapWellnessTables() {
     return;
   }
 
+  try {
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS social_interactions (
       id varchar PRIMARY KEY,
@@ -190,6 +191,9 @@ async function bootstrapWellnessTables() {
       created_at timestamp NOT NULL DEFAULT now()
     )
   `);
+  } catch (error) {
+    console.error("Failed to bootstrap wellness tables:", error instanceof Error ? error.message : error);
+  }
 }
 
 async function getWellnessData(userId: string) {
@@ -250,6 +254,20 @@ async function getWellnessData(userId: string) {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   await bootstrapWellnessTables();
+
+  app.get("/api/health", async (_req, res) => {
+    try {
+      return res.json({
+        status: "ok",
+        service: "lifesync-api",
+        timestamp: new Date().toISOString(),
+        hasDatabase,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Health check failed.";
+      return res.status(500).json({ status: "error", message });
+    }
+  });
 
   app.post("/api/auth/register", async (req, res) => {
     try {

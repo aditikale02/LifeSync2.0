@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { createWellnessRecord, fetchWellnessRecords } from "@/lib/wellness-api";
 import {
   interactionCategories,
   interactionCategoryMultipliers,
@@ -61,6 +62,14 @@ function computeInteractionScore(interaction: SocialInteractionRecord) {
 }
 
 export default function SocialPage() {
+    type SocialInteractionInsert = {
+      user_id: string;
+      type: string;
+      duration: number;
+      category: InteractionCategory;
+      rating: InteractionRating;
+      notes: string | null;
+    };
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -83,12 +92,7 @@ export default function SocialPage() {
       setLoading(true);
 
       try {
-        const response = await fetch(`/api/social-interactions/${user.id}`);
-        const result = await response.json().catch(() => []);
-
-        if (!response.ok) {
-          throw new Error(result?.message || "Failed to load interactions.");
-        }
+        const result = await fetchWellnessRecords<SocialInteractionRecord>("social_interactions", user.id);
 
         if (!cancelled) {
           setInteractions(Array.isArray(result) ? result : []);
@@ -119,31 +123,20 @@ export default function SocialPage() {
     if (!user?.id) {
       return;
     }
-
-    setIsSaving(true);
-
     try {
-      const response = await fetch("/api/social-interactions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          category: selectedCategory,
-          rating: selectedRating,
-          note,
-        }),
-      });
+      const payload = {
+        user_id: user.id,
+        type: selectedCategory,
+        duration: 1,
+        category: selectedCategory,
+        rating: selectedRating,
+        notes: note.trim() || null,
+      };
+      const result = await createWellnessRecord("social_interactions", payload);
 
-      const result = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(result?.message || "Failed to save interaction.");
-      }
-
-      setInteractions((current) => [result, ...current]);
+      setInteractions((current) => [result as unknown as SocialInteractionRecord, ...current]);
       setNote("");
+      window.dispatchEvent(new CustomEvent("wellness:data-updated", { detail: { table: "social_interactions" } }));
 
       toast({
         title: "Interaction logged",

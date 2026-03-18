@@ -72,7 +72,9 @@ export default function MoodPage() {
           ? Math.round(recent.reduce((acc, r) => acc + (r.moodScore ?? 3), 0) / recent.length * 20)
           : 0);
       })
-      .catch(() => {});
+      .catch((error: unknown) => {
+        console.error("[LifeSync] Failed to load mood data:", error);
+      });
   };
 
   useEffect(() => {
@@ -86,22 +88,26 @@ export default function MoodPage() {
     const selected = moods.find((mood) => mood.label === selectedMood);
     setIsSaving(true);
     try {
-      if (user?.id && selected) {
-        await createWellnessRecord("mood_entries", {
-          userId: user.id,
-          moodLabel: selected.label,
-          moodScore: selected.value,
-          notes: note.trim() ? note.trim() : null,
-        });
-        loadMoodData(user.id);
+      if (!user?.id || !selected) {
+        throw new Error("No authenticated user session. Please sign in again before saving data.");
       }
+
+      await createWellnessRecord("mood_entries", {
+        user_id: user.id,
+        mood: selected.label,
+        mood_score: selected.value,
+        notes: note.trim() ? note.trim() : null,
+      });
+      loadMoodData(user.id);
+
       setIsSaving(false);
       toast({ title: "Mood Logged ✨", description: `You logged your mood as "${selectedMood}". Take care!` });
       setSelectedMood("");
       setNote("");
-    } catch {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Please try again.";
       setIsSaving(false);
-      toast({ title: "Could not save mood", description: "Please try again.", variant: "destructive" });
+      toast({ title: "Could not save mood", description: message, variant: "destructive" });
     }
   };
 

@@ -9,9 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
-import { createWellnessRecord, deleteWellnessRecordsByField, fetchWellnessRecords } from "@/lib/wellness-api";
+import { createWellnessRecord, deleteWellnessRecord, fetchWellnessRecords, updateWellnessRecord } from "@/lib/wellness-api";
 
-type HabitRecord = { habitName: string; emoji: string; streak: number; completedToday: boolean; successRate: number; createdAt: string };
+type HabitRecord = { id: string; habitName?: string; name?: string; emoji: string; streak: number; completedToday: boolean; successRate: number; createdAt: string };
 
 interface Habit {
   id: string;
@@ -33,17 +33,9 @@ export default function HabitsPage() {
     if (!user?.id) { setLoading(false); return; }
     fetchWellnessRecords<HabitRecord>("habits", user.id)
       .then(records => {
-        // Group by habitName, keep latest record per habit
-        const map = new Map<string, HabitRecord & { id?: string }>();
-        [...records].reverse().forEach(r => {
-          const existing = map.get(r.habitName);
-          if (!existing || new Date(r.createdAt) > new Date(existing.createdAt)) {
-            map.set(r.habitName, r);
-          }
-        });
-        const loaded: Habit[] = Array.from(map.values()).map(r => ({
-          id: String((r as Record<string, unknown>).id ?? r.habitName),
-          name: r.habitName ?? "",
+        const loaded: Habit[] = records.map(r => ({
+          id: String(r.id),
+          name: r.habitName ?? r.name ?? "",
           emoji: r.emoji ?? "⭐",
           streak: r.streak ?? 0,
           completedToday: r.completedToday ?? false,
@@ -51,9 +43,16 @@ export default function HabitsPage() {
         }));
         setHabits(loaded);
       })
-      .catch(() => {})
+      .catch((error: unknown) => {
+        console.error("[LifeSync] Failed to load habits:", error);
+        toast({
+          title: "Could not load habits",
+          description: "Please refresh or sign in again.",
+          variant: "destructive",
+        });
+      })
       .finally(() => setLoading(false));
-  }, [user?.id]);
+  }, [user?.id, toast]);
 
   const toggleHabit = (id: string) => {
     setHabits(habits.map(habit => {
@@ -63,17 +62,30 @@ export default function HabitsPage() {
           ...habit,
           completedToday: isCompleting,
           streak: isCompleting ? habit.streak + 1 : Math.max(0, habit.streak - 1),
+          successRate: Math.max(0, Math.min(100, isCompleting ? habit.successRate + 2 : habit.successRate - 2)),
         };
 
         if (user?.id) {
-          void createWellnessRecord("habits", {
-            userId: user.id,
-            habitName: nextHabit.name,
-            emoji: nextHabit.emoji,
+          void updateWellnessRecord("habits", id, {
             streak: nextHabit.streak,
             completedToday: nextHabit.completedToday,
             successRate: nextHabit.successRate,
-          }).catch(() => undefined);
+          })
+            .then(async () => {
+              if (isCompleting) {
+                await createWellnessRecord("habit_logs", {
+                  userId: user.id,
+                  habit_id: id,
+                  completed_on: new Date().toISOString().slice(0, 10),
+                });
+              }
+              window.dispatchEvent(new CustomEvent("wellness:data-updated", { detail: { table: "habits" } }));
+            })
+            .catch((error: unknown) => {
+              const message = error instanceof Error ? error.message : "Please try again.";
+              console.error("[LifeSync] Could not update habit:", error);
+              toast({ title: "Could not update habit", description: message, variant: "destructive" });
+            });
         }
 
         if (isCompleting) {
@@ -98,27 +110,31 @@ export default function HabitsPage() {
       return;
     }
     
-    const habit: Habit = {
-      id: Date.now().toString(),
-      name: newHabit,
-      emoji: "⭐",
-      streak: 0,
-      completedToday: false,
-      successRate: 0
-    };
-
     if (user?.id) {
       void createWellnessRecord("habits", {
         userId: user.id,
-        habitName: habit.name,
-        emoji: habit.emoji,
-        streak: habit.streak,
-        completedToday: habit.completedToday,
-        successRate: habit.successRate,
-      }).catch(() => undefined);
+        habitName: newHabit.trim(),
+        emoji: "⭐",
+        streak: 0,
+        completedToday: false,
+        successRate: 0,
+      })
+        .then((saved) => {
+          setHabits((current) => [...current, {
+            id: String(saved.id),
+            name: String((saved as Record<string, unknown>).habitName ?? (saved as Record<string, unknown>).name ?? ""),
+            emoji: String((saved as Record<string, unknown>).emoji ?? "⭐"),
+            streak: Number((saved as Record<string, unknown>).streak ?? 0),
+            completedToday: Boolean((saved as Record<string, unknown>).completedToday),
+            successRate: Number((saved as Record<string, unknown>).successRate ?? 0),
+          }]);
+          window.dispatchEvent(new CustomEvent("wellness:data-updated", { detail: { table: "habits" } }));
+        })
+        .catch(() => {
+          toast({ title: "Could not save habit", description: "Please try again.", variant: "destructive" });
+        });
     }
-    
-    setHabits([...habits, habit]);
+
     setNewHabit("");
     toast({
       title: "Habit Added",
@@ -130,8 +146,16 @@ export default function HabitsPage() {
     const habitToDelete = habits.find(h => h.id === id);
     setHabits(habits.filter(h => h.id !== id));
 
-    if (user?.id && habitToDelete?.name) {
-      void deleteWellnessRecordsByField("habits", user.id, "habitName", habitToDelete.name).catch(() => undefined);
+    if (user?.id) {
+      void deleteWellnessRecord("habits", id)
+        .then(() => {
+          window.dispatchEvent(new CustomEvent("wellness:data-updated", { detail: { table: "habits" } }));
+        })
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : "Please try again.";
+          console.error("[LifeSync] Could not delete habit:", error);
+          toast({ title: "Could not delete habit", description: message, variant: "destructive" });
+        });
     }
 
     toast({

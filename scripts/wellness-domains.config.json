@@ -1,0 +1,55 @@
+{
+  "optionalChecks": {
+    "_lifesync_probe": ["id", "created_at"]
+  },
+  "logicalChecks": {
+    "todos_domain": [
+      { "table": "tasks", "columns": ["id", "user_id", "created_at"] },
+      { "table": "todos", "columns": ["id", "user_id", "created_at"] }
+    ],
+    "water_domain": [
+      { "table": "water_entries", "columns": ["id", "user_id", "created_at"] },
+      { "table": "water_logs", "columns": ["id", "user_id", "created_at"] }
+    ],
+    "sleep_domain": [
+      { "table": "sleep_entries", "columns": ["id", "user_id", "created_at"] },
+      { "table": "sleep_logs", "columns": ["id", "user_id", "created_at"] }
+    ],
+    "study_domain": [
+      { "table": "study_sessions", "columns": ["id", "user_id", "created_at"] },
+      { "table": "study_logs", "columns": ["id", "user_id", "created_at"] }
+    ],
+    "mood_entries": [
+      { "table": "mood_entries", "columns": ["id", "user_id", "created_at"] }
+    ],
+    "habits": [
+      { "table": "habits", "columns": ["id", "user_id", "created_at"] }
+    ],
+    "habit_logs": [
+      { "table": "habit_logs", "columns": ["id", "user_id", "created_at"] }
+    ],
+    "pomodoro_sessions": [
+      { "table": "pomodoro_sessions", "columns": ["id", "user_id", "created_at"] },
+      { "table": "pomodoro_logs", "columns": ["id", "user_id", "created_at"] }
+    ],
+    "meditation_sessions": [
+      { "table": "meditation_sessions", "columns": ["id", "user_id", "created_at"] },
+      { "table": "meditation_logs", "columns": ["id", "user_id", "created_at"] }
+    ],
+    "mindfulness_sessions": [
+      { "table": "mindfulness_sessions", "columns": ["id", "user_id", "created_at"] },
+      { "table": "mindfulness_logs", "columns": ["id", "user_id", "created_at"] }
+    ],
+    "journal_entries": [
+      { "table": "journal_entries", "columns": ["id", "user_id", "created_at"] }
+    ],
+    "activity_domain": [
+      { "table": "activities", "columns": ["id", "user_id", "created_at"] },
+      { "table": "activity_logs", "columns": ["id", "user_id", "created_at"] }
+    ],
+    "social_domain": [
+      { "table": "social_interactions", "columns": ["id", "user_id", "created_at"] },
+      { "table": "social_logs", "columns": ["id", "user_id", "created_at"] }
+    ]
+  }
+}

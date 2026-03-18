@@ -48,14 +48,18 @@ export default function MeditationPage() {
     onSessionComplete: () => {
       if (user?.id) {
         void createWellnessRecord("meditation_sessions", {
-          userId: user.id,
+          user_id: user.id,
           duration,
-          soundId: selectedSoundId,
+          sound_id: selectedSoundId,
           completed: true,
-          startedAt: new Date().toISOString(),
+          started_at: new Date().toISOString(),
         })
           .then(() => loadMeditationStats(user.id))
-          .catch(() => undefined);
+          .catch((error: unknown) => {
+            const message = error instanceof Error ? error.message : "Please try again.";
+            console.error("[LifeSync] Could not save meditation session:", error);
+            toast({ title: "Could not save meditation session", description: message, variant: "destructive" });
+          });
       }
 
       toast({

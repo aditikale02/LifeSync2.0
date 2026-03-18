@@ -21,6 +21,7 @@ import GamesPage from "@/pages/games";
 import FeedbackPage from "@/pages/feedback";
 import AnalyticsPage from "@/pages/analytics";
 import DashboardHubPage from "@/pages/dashboard-hub";
+import TimelinePage from "@/pages/timeline";
 import HealthPage from "@/pages/health";
 import JournalPage from "@/pages/journal";
 import StudyPage from "@/pages/study";
@@ -70,6 +71,7 @@ function Router() {
       <Route path="/signup" component={Login} />
       <ProtectedRoute path="/dashboard" component={Home} />
       <ProtectedRoute path="/dashboard-hub" component={DashboardHubPage} />
+      <ProtectedRoute path="/timeline" component={TimelinePage} />
       <ProtectedRoute path="/wellness-test" component={WellnessTest} />
       <ProtectedRoute path="/todo" component={TodoPage} />
       <ProtectedRoute path="/pomodoro" component={PomodoroPage} />

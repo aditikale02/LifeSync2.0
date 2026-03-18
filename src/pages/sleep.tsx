@@ -36,7 +36,7 @@ export default function SleepPage() {
   const [avgSleep, setAvgSleep] = useState("0.0");
 
   const loadSleepData = (uid: string) => {
-    fetchWellnessRecords<SleepRecord>("sleep_logs", uid)
+    fetchWellnessRecords<SleepRecord>("sleep_entries", uid)
       .then(records => {
         const chart = buildWeeklySleepChart(records);
         setWeeklySleep(chart);
@@ -45,7 +45,9 @@ export default function SleepPage() {
           ? (withData.reduce((s, d) => s + d.hours, 0) / withData.length).toFixed(1)
           : "0.0");
       })
-      .catch(() => {});
+      .catch((error: unknown) => {
+        console.error("[LifeSync] Failed to load sleep data:", error);
+      });
   };
 
   useEffect(() => {
@@ -67,18 +69,22 @@ export default function SleepPage() {
 
   const logSleep = async () => {
     try {
-      if (user?.id) {
-        await createWellnessRecord("sleep_logs", {
-          userId: user.id,
-          bedtime,
-          wakeTime,
-          durationH: Number(calculateSleepHours()),
-        });
-        loadSleepData(user.id);
+      if (!user?.id) {
+        throw new Error("No authenticated user session. Please sign in again before saving data.");
       }
+
+      await createWellnessRecord("sleep_entries", {
+        user_id: user.id,
+        bedtime,
+        wake_time: wakeTime,
+        duration: Number(calculateSleepHours()),
+      });
+
+      loadSleepData(user.id);
       toast({ title: "Sleep logged", description: "Your sleep data now contributes to analytics and AI insights." });
-    } catch {
-      toast({ title: "Could not log sleep", description: "Please try again.", variant: "destructive" });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Please try again.";
+      toast({ title: "Could not log sleep", description: message, variant: "destructive" });
     }
   };
 

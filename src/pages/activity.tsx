@@ -57,7 +57,7 @@ export default function ActivityPage() {
   const [streakDays, setStreakDays] = useState(0);
 
   const loadActivityData = (uid: string) => {
-    fetchWellnessRecords<ActivityRecord>("activity_logs", uid)
+    fetchWellnessRecords<ActivityRecord>("activities", uid)
       .then(records => {
         setWeeklyActivity(buildWeeklyActivityChart(records));
         // Compute streak
@@ -80,7 +80,9 @@ export default function ActivityPage() {
         }));
         setActivities(recent);
       })
-      .catch(() => {});
+      .catch((error: unknown) => {
+        console.error("[LifeSync] Failed to load activity data:", error);
+      });
   };
 
   useEffect(() => {
@@ -100,7 +102,13 @@ export default function ActivityPage() {
     }
 
     setIsSaving(true);
+    const previousActivities = activities;
+
     try {
+      if (!user?.id) {
+        throw new Error("No authenticated user session. Please sign in again before saving data.");
+      }
+
       const newLog: ActivityLog = {
         id: Date.now().toString(),
         type: selectedActivity,
@@ -109,17 +117,16 @@ export default function ActivityPage() {
         loggedAt: new Date()
       };
 
-      if (user?.id) {
-        await createWellnessRecord("activity_logs", {
-          userId: user.id,
-          type: newLog.type,
-          duration: newLog.duration,
-          intensity: newLog.intensity,
-        });
-      }
+      setActivities([newLog, ...previousActivities]);
 
-      setActivities([newLog, ...activities]);
-      if (user?.id) loadActivityData(user.id);
+      await createWellnessRecord("activities", {
+        user_id: user.id,
+        type: newLog.type,
+        duration: newLog.duration,
+        intensity: newLog.intensity,
+      });
+
+      loadActivityData(user.id);
       setDuration("");
       setSelectedActivity("");
       setIsSaving(false);
@@ -127,11 +134,13 @@ export default function ActivityPage() {
         title: "Activity Logged! 💪",
         description: `You did ${duration} minutes of ${selectedActivity}. Keep it up!`,
       });
-    } catch {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Please try again.";
+      setActivities(previousActivities);
       setIsSaving(false);
       toast({
         title: "Could not save activity",
-        description: "Please try again.",
+        description: message,
         variant: "destructive",
       });
     }

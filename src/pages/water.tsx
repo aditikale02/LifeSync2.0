@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +69,7 @@ export default function WaterPage() {
    const [todayLogs, setTodayLogs] = useState(0);
   const [loading, setLoading] = useState(true);
    const [isSaving, setIsSaving] = useState(false);
+   const latestPersistRequestId = useRef(0);
   const percentage = Math.min((glasses / goal) * 100, 100);
 
    const hydrationState = useMemo(() => {
@@ -114,6 +115,8 @@ export default function WaterPage() {
    const persistWater = async (nextGlasses: number, nextGoal: number) => {
       if (!user?.id) return;
 
+      const requestId = latestPersistRequestId.current + 1;
+      latestPersistRequestId.current = requestId;
       setIsSaving(true);
       try {
          await createWellnessRecord("water_logs", {
@@ -122,10 +125,16 @@ export default function WaterPage() {
             goal: nextGoal,
          });
 
+         if (latestPersistRequestId.current !== requestId) {
+            return;
+         }
+
          await loadWaterData(user.id);
          window.dispatchEvent(new CustomEvent("wellness:data-updated", { detail: { table: "water_logs" } }));
       } finally {
-         setIsSaving(false);
+         if (latestPersistRequestId.current === requestId) {
+            setIsSaving(false);
+         }
       }
    };
 
@@ -160,7 +169,8 @@ export default function WaterPage() {
    };
 
    const saveGoal = () => {
-      const parsed = Number(goalInput);
+      const liveGoalInput = (document.getElementById("water-goal") as HTMLInputElement | null)?.value ?? goalInput;
+      const parsed = Number(liveGoalInput);
       if (!Number.isFinite(parsed)) {
          toast({ title: "Invalid goal", description: "Enter a valid number.", variant: "destructive" });
          setGoalInput(String(goal));
@@ -294,6 +304,7 @@ export default function WaterPage() {
                  <Button 
                    variant="outline" 
                    size="icon" 
+                                          data-testid="button-water-decrement"
                             className="h-14 w-14 rounded-2xl border-2 transition-all hover:bg-blue-50 hover:text-blue-600 sm:h-16 sm:w-16"
                    onClick={() => changeWater(-1)}
                             disabled={isSaving}
@@ -302,6 +313,7 @@ export default function WaterPage() {
                  </Button>
                  <Button 
                    size="lg" 
+                                          data-testid="button-water-increment"
                             className="h-14 w-full rounded-2xl bg-blue-600 px-6 text-base font-bold text-white shadow-xl shadow-blue-200 transition-transform active:scale-95 hover:bg-blue-700 sm:h-16 sm:w-auto sm:px-10 sm:text-lg dark:shadow-none"
                    onClick={() => changeWater(1)}
                             disabled={isSaving}
@@ -376,9 +388,10 @@ export default function WaterPage() {
                                min={MIN_GOAL}
                                max={MAX_GOAL}
                                value={goalInput}
+                               data-testid="input-water-goal"
                                onChange={(e) => setGoalInput(e.target.value)}
                             />
-                            <Button variant="outline" onClick={saveGoal} disabled={isSaving}>Save</Button>
+                            <Button variant="outline" onClick={saveGoal} data-testid="button-water-goal-save">Save</Button>
                          </div>
                       </div>
 
@@ -391,9 +404,10 @@ export default function WaterPage() {
                                min={0}
                                max={MAX_GLASSES_PER_DAY}
                                value={manualGlassesInput}
+                               data-testid="input-water-manual"
                                onChange={(e) => setManualGlassesInput(e.target.value)}
                             />
-                            <Button variant="outline" onClick={saveManualGlasses} disabled={isSaving}>Update</Button>
+                            <Button variant="outline" onClick={saveManualGlasses} disabled={isSaving} data-testid="button-water-manual-save">Update</Button>
                          </div>
                       </div>
                    </CardContent>

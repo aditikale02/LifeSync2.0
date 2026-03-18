@@ -11,9 +11,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 import { EmptyState } from "@/components/empty-state";
 import { useAuth } from "@/hooks/use-auth";
-import { createWellnessRecord, deleteWellnessRecordsByField, fetchWellnessRecords } from "@/lib/wellness-api";
+import { createWellnessRecord, deleteWellnessRecord, fetchWellnessRecords, updateWellnessRecord } from "@/lib/wellness-api";
 
-type GoalRecord = { title: string; type: string; targetDate: string; progress: number; completed: boolean; createdAt: string };
+type GoalRecord = { id: string; title: string; type: string; targetDate: string; progress: number; completed: boolean; createdAt: string };
 
 interface Goal {
   id: string;
@@ -38,13 +38,8 @@ export default function GoalsPage() {
     if (!user?.id) { setLoading(false); return; }
     fetchWellnessRecords<GoalRecord>("goals", user.id)
       .then(records => {
-        // Group by title, keep latest state per goal title
-        const map = new Map<string, GoalRecord & { id?: string }>();
-        [...records].reverse().forEach(r => {
-          if (!map.has(r.title)) map.set(r.title, r);
-        });
-        const loaded: Goal[] = Array.from(map.values()).map(r => ({
-          id: String((r as Record<string, unknown>).id ?? r.title),
+        const loaded: Goal[] = records.map(r => ({
+          id: String(r.id),
           title: r.title ?? "",
           type: (r.type as Goal["type"]) ?? "short",
           targetDate: r.targetDate ?? "",
@@ -53,83 +48,110 @@ export default function GoalsPage() {
         }));
         setGoals(loaded);
       })
-      .catch(() => {})
+      .catch((error: unknown) => {
+        console.error("[LifeSync] Failed to load goals:", error);
+        toast({
+          title: "Could not load goals",
+          description: "Please refresh or sign in again.",
+          variant: "destructive",
+        });
+      })
       .finally(() => setLoading(false));
-  }, [user?.id]);
+  }, [user?.id, toast]);
 
-  const addGoal = () => {
+  const addGoal = async () => {
     if (!newGoal.trim() || !targetDate) {
       toast({ title: "Incomplete details", description: "Title and target date are required.", variant: "destructive" });
       return;
     }
 
     setIsAdding(true);
-    const goal: Goal = {
-      id: Date.now().toString(),
-      title: newGoal.trim(),
-      type: goalType,
-      targetDate,
-      progress: 0,
-      completed: false
-    };
-    setGoals([goal, ...goals]);
+    const goalTitle = newGoal.trim();
 
-    if (user?.id) {
-      void createWellnessRecord("goals", {
+    try {
+      if (!user?.id) {
+        throw new Error("No authenticated user session. Please sign in again before saving data.");
+      }
+
+      const saved = await createWellnessRecord("goals", {
         userId: user.id,
-        title: goal.title,
-        type: goal.type,
-        targetDate: goal.targetDate,
-        progress: goal.progress,
-        completed: goal.completed,
-      }).catch(() => undefined);
-    }
+        title: goalTitle,
+        type: goalType,
+        targetDate,
+        progress: 0,
+        completed: false,
+      });
 
-    setNewGoal("");
-    setTargetDate("");
-    setIsAdding(false);
-    toast({
-      title: "Goal Created 🏔️",
-      description: `Your journey towards "${goal.title}" begins today.`,
-    });
+      setGoals((current) => [{
+        id: String(saved.id),
+        title: String((saved as Record<string, unknown>).title ?? ""),
+        type: ((saved as Record<string, unknown>).type as Goal["type"]) ?? "short",
+        targetDate: String((saved as Record<string, unknown>).targetDate ?? ""),
+        progress: Number((saved as Record<string, unknown>).progress ?? 0),
+        completed: Boolean((saved as Record<string, unknown>).completed),
+      }, ...current]);
+      window.dispatchEvent(new CustomEvent("wellness:data-updated", { detail: { table: "goals" } }));
+
+      setNewGoal("");
+      setTargetDate("");
+      toast({
+        title: "Goal Created 🏔️",
+        description: `Your journey towards "${goalTitle}" begins today.`,
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Please try again.";
+      toast({ title: "Could not save goal", description: message, variant: "destructive" });
+    } finally {
+      setIsAdding(false);
+    }
   };
 
-  const deleteGoal = (id: string) => {
-    const toDelete = goals.find(g => g.id === id);
+  const deleteGoal = async (id: string) => {
+    const previousGoals = goals;
     setGoals(goals.filter(g => g.id !== id));
 
-    if (user?.id && toDelete?.title) {
-      void deleteWellnessRecordsByField("goals", user.id, "title", toDelete.title).catch(() => undefined);
+    try {
+      await deleteWellnessRecord("goals", id);
+      window.dispatchEvent(new CustomEvent("wellness:data-updated", { detail: { table: "goals" } }));
+      toast({ title: "Goal Removed", description: "The mountain hasn't changed, only your path." });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Please try again.";
+      setGoals(previousGoals);
+      toast({ title: "Could not remove goal", description: message, variant: "destructive" });
     }
-
-    toast({ title: "Goal Removed", description: "The mountain hasn't changed, only your path." });
   };
 
-  const updateProgress = (id: string, delta: number) => {
-    setGoals(goals.map(g => {
-      if (g.id === id) {
-        const newProgress = Math.min(100, Math.max(0, g.progress + delta));
-        const isNowCompleted = newProgress === 100;
-        const nextGoal = { ...g, progress: newProgress, completed: isNowCompleted };
+  const updateProgress = async (id: string, delta: number) => {
+    const previousGoals = goals;
+    const target = goals.find((goal) => goal.id === id);
+    if (!target) return;
 
-        if (user?.id) {
-          void createWellnessRecord("goals", {
-            userId: user.id,
-            title: nextGoal.title,
-            type: nextGoal.type,
-            targetDate: nextGoal.targetDate,
-            progress: nextGoal.progress,
-            completed: nextGoal.completed,
-          }).catch(() => undefined);
-        }
+    const newProgress = Math.min(100, Math.max(0, target.progress + delta));
+    const isNowCompleted = newProgress === 100;
+    const nextGoals = goals.map((goal) =>
+      goal.id === id
+        ? { ...goal, progress: newProgress, completed: isNowCompleted }
+        : goal,
+    );
 
-        if (isNowCompleted && !g.completed) {
-           toast({ title: "Achievement Unlocked! 🏆", description: `You reached your goal: "${g.title}"` });
-        }
-        return nextGoal;
+    setGoals(nextGoals);
+
+    try {
+      await updateWellnessRecord("goals", id, {
+        progress: newProgress,
+        completed: isNowCompleted,
+      });
+
+      window.dispatchEvent(new CustomEvent("wellness:data-updated", { detail: { table: "goals" } }));
+
+      if (isNowCompleted && !target.completed) {
+        toast({ title: "Achievement Unlocked! 🏆", description: `You reached your goal: "${target.title}"` });
       }
-      return g;
-    }));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Please try again.";
+      setGoals(previousGoals);
+      toast({ title: "Could not update progress", description: message, variant: "destructive" });
+    }
   };
 
   const completedGoals = goals.filter(g => g.completed);

@@ -75,9 +75,13 @@ app.use((req, res, next) => {
   const defaultPort = parseInt(process.env.PORT || "5000", 10);
   const host = "localhost";
 
+  const allowPortRetry =
+    app.get("env") === "development" &&
+    String(process.env.ALLOW_PORT_RETRY ?? "true").toLowerCase() !== "false";
+
   const startServer = (port: number, retriesLeft: number) => {
     const onError = (error: NodeJS.ErrnoException) => {
-      if (error.code === "EADDRINUSE" && app.get("env") === "development" && retriesLeft > 0) {
+      if (error.code === "EADDRINUSE" && allowPortRetry && retriesLeft > 0) {
         const nextPort = port + 1;
         log(`port ${port} is in use, retrying on ${nextPort}`);
         startServer(nextPort, retriesLeft - 1);

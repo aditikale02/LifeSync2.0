@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -67,11 +68,17 @@ export default function StudyPage() {
   const [notes, setNotes] = useState("");
   const [studyDate, setStudyDate] = useState(() => new Date().toISOString().slice(0, 10));
 
-  const userId = user?.id ?? "guest";
+  const userId = user?.id;
 
   const loadLogs = async () => {
+    if (!userId) {
+      setLogs([]);
+      setLoading(false);
+      return;
+    }
+
     try {
-      const data = await fetchWellnessRecords<StudyLog>("study_logs", userId);
+      const data = await fetchWellnessRecords<StudyLog>("study_sessions", userId);
       setLogs(data);
     } catch {
       // silently handle network issues
@@ -94,6 +101,11 @@ export default function StudyPage() {
   };
 
   const handleAdd = async () => {
+    if (!userId) {
+      toast({ title: "Please sign in to log study sessions.", variant: "destructive" });
+      return;
+    }
+
     const dur = parseInt(durationMinutes, 10);
     if (!subject.trim()) {
       toast({ title: "Subject is required.", variant: "destructive" });
@@ -105,13 +117,13 @@ export default function StudyPage() {
     }
     setSaving(true);
     try {
-      await createWellnessRecord("study_logs", {
-        userId,
+      await createWellnessRecord("study_sessions", {
+        user_id: userId,
         subject: subject.trim(),
-        durationMinutes: dur,
-        focusRating,
+        duration: dur,
+        focus_rating: focusRating,
         notes: notes.trim() || null,
-        studyDate,
+        study_date: studyDate,
       });
       toast({ title: "Study session logged!" });
       resetForm();
@@ -127,7 +139,7 @@ export default function StudyPage() {
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     try {
-      await deleteWellnessRecord("study_logs", id);
+      await deleteWellnessRecord("study_sessions", id);
       setLogs((prev) => prev.filter((l) => l.id !== id));
       toast({ title: "Session removed." });
     } catch {
@@ -218,6 +230,9 @@ export default function StudyPage() {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Log a Study Session</DialogTitle>
+              <DialogDescription>
+                Save a study session to Supabase so it persists across refreshes and sessions.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 pt-2">
               <div className="space-y-1.5">

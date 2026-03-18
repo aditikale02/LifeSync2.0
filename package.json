@@ -4,11 +4,19 @@
   "type": "module",
   "scripts": {
     "dev": "cross-env NODE_ENV=development tsx server/index.ts",
+    "dev:test": "cross-env NODE_ENV=development PORT=5100 ALLOW_PORT_RETRY=false tsx server/index.ts",
     "build": "vite build",
     "build:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist-server",
-    "start": "NODE_ENV=production node dist-server/index.js",
+    "start": "cross-env NODE_ENV=production node dist-server/index.js",
     "check": "tsc",
-    "db:push": "drizzle-kit push"
+    "verify:supabase": "node scripts/verify-supabase.mjs",
+    "preflight": "node scripts/preflight.mjs",
+    "preflight:strict": "cross-env PREFLIGHT_STRICT=true node scripts/preflight.mjs",
+    "db:push": "drizzle-kit push",
+    "e2e": "playwright test",
+    "e2e:headed": "playwright test --headed",
+    "e2e:report": "playwright show-report",
+    "e2e:install": "playwright install --with-deps"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -102,6 +110,7 @@
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.25.0",
     "postcss": "^8.4.47",
+    "@playwright/test": "^1.53.2",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.20.5",
     "typescript": "5.6.3",

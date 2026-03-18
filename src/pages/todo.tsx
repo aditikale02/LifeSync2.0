@@ -9,9 +9,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 import { EmptyState } from "@/components/empty-state";
 import { useAuth } from "@/hooks/use-auth";
-import { createWellnessRecord, deleteWellnessRecordsByField, fetchWellnessRecords } from "@/lib/wellness-api";
+import { createWellnessRecord, deleteWellnessRecord, fetchWellnessRecords, updateWellnessRecord } from "@/lib/wellness-api";
 
-type TodoRecord = { text: string; completed: boolean; priority: string; createdAt: string };
+type TodoRecord = { id: string; title?: string; text?: string; completed: boolean; priority: string; createdAt: string };
 
 interface Todo {
   id: string;
@@ -30,24 +30,26 @@ export default function TodoPage() {
 
   useEffect(() => {
     if (!user?.id) { setLoading(false); return; }
-    fetchWellnessRecords<TodoRecord>("todos", user.id)
+    fetchWellnessRecords<TodoRecord>("tasks", user.id)
       .then(records => {
-        // Group by text, keep latest state per todo text
-        const map = new Map<string, TodoRecord & { id?: string }>();
-        [...records].reverse().forEach(r => {
-          if (!map.has(r.text)) map.set(r.text, r);
-        });
-        const loaded: Todo[] = Array.from(map.values()).map(r => ({
-          id: String((r as Record<string, unknown>).id ?? r.text),
-          text: r.text ?? "",
+        const loaded: Todo[] = records.map(r => ({
+          id: String(r.id),
+          text: r.title ?? r.text ?? "",
           completed: r.completed ?? false,
           priority: (r.priority as Todo["priority"]) ?? "medium",
         }));
         setTodos(loaded);
       })
-      .catch(() => {})
+      .catch((error: unknown) => {
+        console.error("[LifeSync] Failed to load tasks:", error);
+        toast({
+          title: "Could not load tasks",
+          description: "Please refresh or sign in again.",
+          variant: "destructive",
+        });
+      })
       .finally(() => setLoading(false));
-  }, [user?.id]);
+  }, [user?.id, toast]);
 
   const addTodo = () => {
     if (!newTodo.trim()) {
@@ -56,23 +58,34 @@ export default function TodoPage() {
     }
     
     setIsAdding(true);
-    const nextTodo = { id: Date.now().toString(), text: newTodo.trim(), completed: false, priority: 'medium' as const };
-    setTodos([nextTodo, ...todos]);
-
     if (user?.id) {
-      void createWellnessRecord("todos", {
+      void createWellnessRecord("tasks", {
         userId: user.id,
-        text: nextTodo.text,
-        completed: nextTodo.completed,
-        priority: nextTodo.priority,
-      }).catch(() => undefined);
+        title: newTodo.trim(),
+        completed: false,
+        priority: "medium",
+      })
+        .then((saved) => {
+          setTodos((current) => [{
+            id: String(saved.id),
+            text: String((saved as Record<string, unknown>).title ?? ""),
+            completed: Boolean((saved as Record<string, unknown>).completed),
+            priority: ((saved as Record<string, unknown>).priority as Todo["priority"]) ?? "medium",
+          }, ...current]);
+          window.dispatchEvent(new CustomEvent("wellness:data-updated", { detail: { table: "tasks" } }));
+        })
+        .catch(() => {
+          toast({ title: "Could not save task", description: "Please try again.", variant: "destructive" });
+        })
+        .finally(() => setIsAdding(false));
+    } else {
+      setIsAdding(false);
     }
 
     setNewTodo("");
-    setIsAdding(false);
     toast({
       title: "Task Added ✅",
-      description: `"${nextTodo.text}" is now in your sync list.`,
+      description: `"${newTodo.trim()}" is now in your sync list.`,
     });
   };
 
@@ -82,12 +95,15 @@ export default function TodoPage() {
         const nextTodo = { ...todo, completed: !todo.completed };
 
         if (user?.id) {
-          void createWellnessRecord("todos", {
-            userId: user.id,
-            text: nextTodo.text,
+          void updateWellnessRecord("tasks", id, {
             completed: nextTodo.completed,
-            priority: nextTodo.priority,
-          }).catch(() => undefined);
+          }).then(() => {
+            window.dispatchEvent(new CustomEvent("wellness:data-updated", { detail: { table: "tasks" } }));
+          }).catch((error: unknown) => {
+            const message = error instanceof Error ? error.message : "Please try again.";
+            console.error("[LifeSync] Could not update task:", error);
+            toast({ title: "Could not update task", description: message, variant: "destructive" });
+          });
         }
 
         if (!todo.completed) {
@@ -100,11 +116,18 @@ export default function TodoPage() {
   };
 
   const deleteTodo = (id: string) => {
-    const toDelete = todos.find(todo => todo.id === id);
     setTodos(todos.filter(todo => todo.id !== id));
 
-    if (user?.id && toDelete?.text) {
-      void deleteWellnessRecordsByField("todos", user.id, "text", toDelete.text).catch(() => undefined);
+    if (user?.id) {
+      void deleteWellnessRecord("tasks", id)
+        .then(() => {
+          window.dispatchEvent(new CustomEvent("wellness:data-updated", { detail: { table: "tasks" } }));
+        })
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : "Please try again.";
+          console.error("[LifeSync] Could not delete task:", error);
+          toast({ title: "Could not delete task", description: message, variant: "destructive" });
+        });
     }
 
     toast({ title: "Task Deleted", description: "List updated successfully." });
@@ -160,6 +183,7 @@ export default function TodoPage() {
                 value={newTodo}
                 onChange={(e) => setNewTodo(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && addTodo()}
+                data-testid="input-todo-new"
                 className="h-14 pl-12 pr-4 border-indigo-100 focus:border-indigo-500 rounded-2xl shadow-inner bg-muted/20"
               />
               <Plus className="absolute left-4 top-4.5 h-5 w-5 text-indigo-400" />
@@ -167,6 +191,7 @@ export default function TodoPage() {
             <Button 
                onClick={addTodo} 
                disabled={isAdding} 
+              data-testid="button-todo-add"
                className="h-14 px-8 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg active:scale-95 transition-all"
             >
               {isAdding ? "Adding..." : "Add Task"}
@@ -187,6 +212,7 @@ export default function TodoPage() {
                 {todos.map((todo) => (
                   <motion.div
                     key={todo.id}
+                    data-testid="todo-item"
                     layout
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -200,6 +226,7 @@ export default function TodoPage() {
                     <Checkbox
                       checked={todo.completed}
                       onCheckedChange={() => toggleTodo(todo.id)}
+                      data-testid="checkbox-todo-toggle"
                       className="h-6 w-6 rounded-lg data-[state=checked]:bg-indigo-600 border-2"
                     />
                     <span className={`flex-1 font-semibold text-lg transition-all ${
@@ -211,6 +238,7 @@ export default function TodoPage() {
                       variant="ghost"
                       size="icon"
                       onClick={() => deleteTodo(todo.id)}
+                      data-testid="button-todo-delete"
                       className="opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-all rounded-full"
                     >
                       <Trash2 className="h-5 w-5" />

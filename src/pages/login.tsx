@@ -283,6 +283,7 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={() => setMode("login")}
+                    data-testid="tab-login"
                     className={`h-10 rounded-lg text-sm font-bold transition ${mode === "login" ? "bg-indigo-600 text-white" : "text-slate-700 hover:bg-white/80"}`}
                   >
                     Login
@@ -290,6 +291,7 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={() => setMode("signup")}
+                    data-testid="tab-signup"
                     className={`h-10 rounded-lg text-sm font-bold transition ${mode === "signup" ? "bg-indigo-600 text-white" : "text-slate-700 hover:bg-white/80"}`}
                   >
                     Sign Up

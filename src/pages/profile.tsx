@@ -40,6 +40,11 @@ export default function ProfilePage() {
     
     setIsLoading(true);
     try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session?.user?.id) {
+        throw new Error("No authenticated user session. Please sign in again.");
+      }
+
       // Fetch profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -84,7 +89,7 @@ export default function ProfilePage() {
       console.error("Error fetching profile:", error);
       toast({
         title: "Error",
-        description: "Failed to load profile data.",
+        description: error?.message || "Failed to load profile data.",
         variant: "destructive"
       });
     } finally {
@@ -101,6 +106,11 @@ export default function ProfilePage() {
     
     setIsSaving(true);
     try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session?.user?.id) {
+        throw new Error("No authenticated user session. Please sign in again.");
+      }
+
       // Update email if changed
       if (profile.email !== user.email) {
         const { error: emailError } = await supabase.auth.updateUser({ email: profile.email });

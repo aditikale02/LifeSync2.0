@@ -28,7 +28,9 @@ export default function JournalPage() {
   const loadEntries = (uid: string) => {
     fetchWellnessRecords<JournalRecord>("journal_entries", uid)
       .then(records => setPastEntries(records))
-      .catch(() => {});
+      .catch((error: unknown) => {
+        console.error("[LifeSync] Failed to load journal entries:", error);
+      });
   };
 
   useEffect(() => {
@@ -52,24 +54,27 @@ export default function JournalPage() {
     }
 
     try {
-      if (user?.id) {
-        await createWellnessRecord("journal_entries", {
-          userId: user.id,
-          title: title.trim(),
-          body: entry.trim(),
-          moodEmoji: selectedMood || null,
-          wordCount,
-        });
-        loadEntries(user.id);
+      if (!user?.id) {
+        throw new Error("No authenticated user session. Please sign in again before saving data.");
       }
+
+      await createWellnessRecord("journal_entries", {
+        user_id: user.id,
+        title: title.trim(),
+        content: entry.trim(),
+        mood_emoji: selectedMood || null,
+        word_count: wordCount,
+      });
+      loadEntries(user.id);
 
       toast({ title: "Journal saved", description: "Your entry now contributes to emotional trends and AI insights." });
       setTitle("");
       setEntry("");
       setSelectedMood("");
       setWordCount(0);
-    } catch {
-      toast({ title: "Could not save journal", description: "Please try again.", variant: "destructive" });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Please try again.";
+      toast({ title: "Could not save journal", description: message, variant: "destructive" });
     }
   };
 
